@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>粒子系统提前预运行</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            // 设置相机位置
+            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 5, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+            scene.clearColor = new BABYLON.Color3(0.0, 0.0, 0.0);
+
+            // 创建一个粒子系统
+            var surfaceParticles = new BABYLON.ParticleSystem("surfaceParticles", 1600, scene);
+
+            // 设置粒子的纹理
+            surfaceParticles.particleTexture = new BABYLON.Texture("../images/T_SunSurface.png", scene);
+
+            // 创建球体
+            var coreSphere = BABYLON.MeshBuilder.CreateSphere("coreSphere", {diameter: 2.01, segments: 64}, scene);
+
+            // 创建材质
+            var coreMat = new BABYLON.StandardMaterial("coreMat", scene);
+            coreMat.emissiveColor = new BABYLON.Color3(0.3773, 0.0930, 0.0266);
+
+            // 设置球体材质
+            coreSphere.material = coreMat;
+
+            // 设置提前运行
+            surfaceParticles.preWarmStepOffset = 10;
+            surfaceParticles.preWarmCycles = 100;
+
+            //设置粒子的初始角度
+            surfaceParticles.minInitialRotation = -2 * Math.PI;
+            surfaceParticles.maxInitialRotation = 2 * Math.PI;
+
+            // 创建粒子发射器
+            var sunEmitter = new BABYLON.SphereParticleEmitter();
+            sunEmitter.radius = 1;
+            sunEmitter.radiusRange = 0; // 仅从发射器的一个面发射
+
+            // 指定粒子的发射器
+            surfaceParticles.emitter = coreSphere; // the starting object, the emitter
+            surfaceParticles.particleEmitterType = sunEmitter;
+
+            //设置过渡颜色
+            surfaceParticles.addColorGradient(0, new BABYLON.Color4(0.8509, 0.4784, 0.1019, 0.0));
+            surfaceParticles.addColorGradient(0.4, new BABYLON.Color4(0.6259, 0.3056, 0.0619, 0.5));
+            surfaceParticles.addColorGradient(0.5, new BABYLON.Color4(0.6039, 0.2887, 0.0579, 0.5));
+            surfaceParticles.addColorGradient(1.0, new BABYLON.Color4(0.3207, 0.0713, 0.0075, 0.0));
+
+            // 设置每个粒子的大小范围
+            surfaceParticles.minSize = 0.4;
+            surfaceParticles.maxSize = 0.7;
+
+            // 设置每个粒子的生命周期
+            surfaceParticles.minLifeTime = 8.0;
+            surfaceParticles.maxLifeTime = 8.0;
+
+            // Emission rate设置发射速率
+            surfaceParticles.emitRate = 200;
+
+            // 混合模式: BLENDMODE_ONEONE, BLENDMODE_STANDARD, or BLENDMODE_ADD
+            surfaceParticles.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+
+            // 设置粒子的重力
+            surfaceParticles.gravity = new BABYLON.Vector3(0, 0, 0);
+
+            // 角速度，值为弧度
+            surfaceParticles.minAngularSpeed = -0.4;
+            surfaceParticles.maxAngularSpeed = 0.4;
+
+            //  速度
+            surfaceParticles.minEmitPower = 0;
+            surfaceParticles.maxEmitPower = 0;
+            surfaceParticles.updateSpeed = 0.005;
+
+            // No billboard
+            surfaceParticles.isBillboardBased = false;
+
+            // 开启粒子系统
+            surfaceParticles.start();
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

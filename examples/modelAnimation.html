@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>模型动画</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        .list{
+            position:absolute;
+            left:0;
+            top:0;
+        }
+
+        .list li{
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-top: 5px;
+            height:30px;
+            width:80px;
+            text-align: center;
+            line-height: 28px;
+            cursor: pointer;
+            list-style-type: none;
+            background: aliceblue;
+            font-weight: bold;
+            font-family: "Microsoft YaHei";
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+<ul class="list">
+    <li>站立</li>
+    <li>走</li>
+    <li>跑</li>
+    <li>左移</li>
+    <li>右移</li>
+    <li>走+左移</li>
+    <li>跑+右移</li>
+</ul>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+
+            engine.enableOfflineSupport = false;
+
+            // 这里非常重要，用来设置 Babylon.js 使用 decomposeLerp and matrix interpolation 进行动画之间的矩阵插值
+            BABYLON.Animation.AllowMatricesInterpolation = true;
+
+            var scene = new BABYLON.Scene(engine);
+
+            var camera = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 3, new BABYLON.Vector3(0, 1, 0), scene);
+            camera.attachControl(canvas, true);
+
+            camera.lowerRadiusLimit = 2;
+            camera.upperRadiusLimit = 10;
+            camera.wheelDeltaPercentage = 0.01;
+
+            var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.6;
+            light.specular = BABYLON.Color3.Black();
+
+            var light2 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -0.5, -1.0), scene);
+            light2.position = new BABYLON.Vector3(0, 5, 5);
+
+            // Shadows
+            var shadowGenerator = new BABYLON.ShadowGenerator(1024, light2);
+            shadowGenerator.useBlurExponentialShadowMap = true;
+            shadowGenerator.blurKernel = 32;
+
+            engine.displayLoadingUI();
+
+            BABYLON.SceneLoader.ImportMesh("", "../models/", "dummy3.babylon", scene, function (newMeshes, particleSystems, skeletons) {
+                var skeleton = skeletons[0];
+
+                shadowGenerator.addShadowCaster(scene.meshes[0], true);
+                for (var index = 0; index < newMeshes.length; index++) {
+                    newMeshes[index].receiveShadows = false;
+                }
+
+                var helper = scene.createDefaultEnvironment({
+                    enableGroundShadow: true
+                });
+                helper.setMainColor(BABYLON.Color3.Gray());
+                helper.ground.position.y += 0.01;
+
+                // ROBOT
+                skeleton.animationPropertiesOverride = new BABYLON.AnimationPropertiesOverride();
+                skeleton.animationPropertiesOverride.enableBlending = true;
+                skeleton.animationPropertiesOverride.blendingSpeed = 0.05;
+                skeleton.animationPropertiesOverride.loopMode = 1;
+
+                var idleRange = skeleton.getAnimationRange("YBot_Idle");
+                var walkRange = skeleton.getAnimationRange("YBot_Walk");
+                var runRange = skeleton.getAnimationRange("YBot_Run");
+                var leftRange = skeleton.getAnimationRange("YBot_LeftStrafeWalk");
+                var rightRange = skeleton.getAnimationRange("YBot_RightStrafeWalk");
+
+                // 默认站立动画
+                if (idleRange) scene.beginAnimation(skeleton, idleRange.from, idleRange.to, true);
+
+                // 绑定点击事件
+
+                //获取li的dom对象
+                var list = document.querySelectorAll(".list li");
+
+                //站立
+                list[0].onclick = function(){
+                    if (idleRange) scene.beginAnimation(skeleton, idleRange.from, idleRange.to, true);
+                };
+
+                //走
+                list[1].onclick = function(){
+                    if (walkRange) scene.beginAnimation(skeleton, walkRange.from, walkRange.to, true);
+                };
+
+                //跑
+                list[2].onclick = function(){
+                    if (runRange) scene.beginAnimation(skeleton, runRange.from, runRange.to, true);
+                };
+
+                //左移
+                list[3].onclick = function(){
+                    if (leftRange) scene.beginAnimation(skeleton, leftRange.from, leftRange.to, true);
+                };
+
+                //右移
+                list[4].onclick = function(){
+                    if (rightRange) scene.beginAnimation(skeleton, rightRange.from, rightRange.to, true);
+                };
+
+                //走并且左移
+                list[5].onclick = function(){
+                    if (walkRange && leftRange) {
+                        scene.stopAnimation(skeleton);
+                        var walkAnim = scene.beginWeightedAnimation(skeleton, walkRange.from, walkRange.to, 0.5, true);
+                        var leftAnim = scene.beginWeightedAnimation(skeleton, leftRange.from, leftRange.to, 0.5, true);
+
+                        // Note: Sync Speed Ratio With Master Walk Animation
+                        walkAnim.syncWith(null);
+                        leftAnim.syncWith(walkAnim);
+                    }
+                };
+
+                //走并且左移
+                list[6].onclick = function(){
+                    if (runRange && rightRange) {
+                        scene.stopAnimation(skeleton);
+                        var runAnim = scene.beginWeightedAnimation(skeleton, runRange.from, runRange.to, 0.5, true);
+                        var rightAnim = scene.beginWeightedAnimation(skeleton, rightRange.from, rightRange.to, 0.5, true);
+
+                        // Note: Sync Speed Ratio With Master Walk Animation
+                        runAnim.syncWith(null);
+                        rightAnim.syncWith(runAnim);
+                    }
+                };
+
+                engine.hideLoadingUI();
+            });
+
+            return scene;
+        };
+
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

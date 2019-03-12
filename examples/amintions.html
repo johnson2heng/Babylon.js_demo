@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>基础动画</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            var light = new BABYLON.PointLight("Omni", new BABYLON.Vector3(0, 100, 100), scene);
+            var camera = new BABYLON.ArcRotateCamera("Camera", 1, 0.8, 100, new BABYLON.Vector3.Zero(), scene);
+            camera.attachControl(canvas, true);
+
+            var box1 = BABYLON.Mesh.CreateBox("Box1", 10.0, scene);
+
+            var materialBox = new BABYLON.StandardMaterial("mat", scene);
+            materialBox.diffuseColor = new BABYLON.Color3(0, 1, 0);
+
+            box1.material = materialBox;
+
+            //Create a scaling animation at 30 FPS
+            var animationBox = new BABYLON.Animation("tutoAnimation", "scaling.x", 30, BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+                BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+            // Animation keys
+            var keys = [];
+            //At the animation key 0, the value of scaling is "1"
+            keys.push({
+                frame: 0,
+                value: 1
+            });
+
+            //At the animation key 20, the value of scaling is "0.2"
+            keys.push({
+                frame: 20,
+                value: 0.2
+            });
+
+            //At the animation key 100, the value of scaling is "1"
+            keys.push({
+                frame: 80,
+                value: 1
+            });
+
+            animationBox.setKeys(keys);
+
+            box1.animations.push(animationBox);
+
+            //Create a scaling animation at 30 FPS
+            var animationBoxY = new BABYLON.Animation("y", "scaling.y", 30, BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+                BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+            // Animation keys
+            var keysY = [];
+            //At the animation key 0, the value of scaling is "1"
+            keysY.push({
+                frame: 0,
+                value: 1
+            });
+
+            //At the animation key 20, the value of scaling is "0.2"
+            keysY.push({
+                frame: 20,
+                value: 0.2
+            });
+
+            //At the animation key 100, the value of scaling is "1"
+            keysY.push({
+                frame: 80,
+                value: 1
+            });
+
+            animationBoxY.setKeys(keysY);
+
+            box1.animations.push(animationBoxY);
+
+            setTimeout(async () => {
+                var anim = scene.beginAnimation(box1, 0, 100, false);
+
+                console.log("before");
+                await anim.waitAsync();
+                console.log("after");
+            });
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

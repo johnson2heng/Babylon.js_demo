@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>射线拾取</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            var light = new BABYLON.PointLight("Omni", new BABYLON.Vector3(0, 100, 100), scene);
+            camera = new BABYLON.ArcRotateCamera("Camera", 0, 0.8, 100, new BABYLON.Vector3.Zero(), scene);
+            camera.attachControl(canvas, true);
+
+            var ground = BABYLON.Mesh.CreateGround("ground", 500, 500, 10, scene);
+
+            var box = BABYLON.Mesh.CreateBox("box", 4.0, scene);
+            box.position.y = 2;
+            box.scaling.z = 2;
+            var matBox = new BABYLON.StandardMaterial("matBox", scene);
+            matBox.diffuseColor = new BABYLON.Color3(1.0, 0.1, 0.1);
+            box.material = matBox;
+            box.isPickable = false; //禁止此立方体被选中
+
+            var box2 = BABYLON.Mesh.CreateBox("box2", 8.0, scene);
+            box2.position = new BABYLON.Vector3(-20, 4, 0);
+            var matBox2 = new BABYLON.StandardMaterial("matBox2", scene);
+            matBox2.diffuseColor = new BABYLON.Color3(0.1, 0.1, 1);
+            box2.material = matBox2;
+
+            var box3 = box2.clone();
+            box3.position.x -= 20;
+
+            var box4 = BABYLON.Mesh.CreateBox("box4", 8.0, scene);
+            box4.position = new BABYLON.Vector3(0, 4, 30);
+            var matBox4 = new BABYLON.StandardMaterial("matBox4", scene);
+            matBox4.diffuseColor = new BABYLON.Color3(0.1, 1, 0.1);
+            box4.material = matBox4;
+
+
+            //鼠标移动拾取位置，计算
+            function mousemovef(){
+                var pickResult = scene.pick(scene.pointerX, scene.pointerY);
+
+                if (pickResult.hit) {
+                    var diffX = pickResult.pickedPoint.x - box.position.x;
+                    var diffY = pickResult.pickedPoint.z - box.position.z;
+                    box.rotation.y = Math.atan2(diffX,diffY);
+                }
+            }
+
+            scene.onPointerMove = function () {
+                mousemovef();
+            };
+
+            //将局部坐标转换为世界坐标点
+            function vecToLocal(vector, mesh){
+                var m = mesh.getWorldMatrix();
+                var v = BABYLON.Vector3.TransformCoordinates(vector, m); //局部坐标系的点乘以世界矩阵，可以变换成世界坐标系下面的点
+                return v;
+            }
+
+            //模型过滤器
+            function predicate(mesh){
+                if (mesh == box2 || mesh == box){
+                    return false;
+                }
+                return true;
+            }
+
+            var ray, rayHelper;
+            //更新射线
+            function castRay(){
+                if(rayHelper){
+                    rayHelper.dispose();
+                }
+                var origin = box.position; //获取立方体的位置
+
+                //获取z轴正方向的坐标转换为立方体的世界坐标位置
+                var forward = new BABYLON.Vector3(0,0,1);
+                forward = vecToLocal(forward, box);
+
+                //用此点世界坐标去减去立方体的位置，就可以获取当前射线的向量
+                var direction = forward.subtract(origin);
+                direction = BABYLON.Vector3.Normalize(direction);
+
+                var length = 100;
+
+                ray = new BABYLON.Ray(origin, direction, length);
+
+                rayHelper = new BABYLON.RayHelper(ray);
+                rayHelper.show(scene);
+
+                var hit = scene.pickWithRay(ray, predicate);
+
+                if (hit.pickedMesh){
+                    hit.pickedMesh.scaling.y += 0.01;
+                }
+            }
+
+            scene.registerBeforeRender(function () {
+                castRay();
+            });
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

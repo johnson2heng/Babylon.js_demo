@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>投影纹理案例</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            // Setup environment
+            var camera = new BABYLON.ArcRotateCamera("Camera", 0, 0.8, 90, BABYLON.Vector3.Zero(), scene);
+            camera.lowerBetaLimit = 0.1;
+            camera.upperBetaLimit = (Math.PI / 2) * 0.9;
+            camera.lowerRadiusLimit = 30;
+            camera.upperRadiusLimit = 150;
+            camera.attachControl(canvas, true);
+
+            var light = new BABYLON.HemisphericLight("dir01", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.1;
+
+            // spot
+            var spotLight = new BABYLON.SpotLight("spot02", new BABYLON.Vector3(30, 40, 30),
+                new BABYLON.Vector3(-1, -2, -1), 1.1, 16, scene);
+            spotLight.projectionTexture = new BABYLON.Texture("../images/co.png", scene);
+            spotLight.setDirectionToTarget(BABYLON.Vector3.Zero());
+            spotLight.intensity = 1.5;
+
+            // Ground
+            var ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "../images/heightMap.png", 100, 100, 100, 0, 10, scene, false);
+            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
+            groundMaterial.diffuseTexture = new BABYLON.Texture("../images/ground.jpg", scene);
+            groundMaterial.diffuseTexture.uScale = 6;
+            groundMaterial.diffuseTexture.vScale = 6;
+            groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+            ground.position.y = -2.05;
+            ground.material = groundMaterial;
+
+            // Animations
+            var alpha = 0;
+            scene.registerBeforeRender(function () {
+                spotLight.position = new BABYLON.Vector3(Math.cos(alpha) * 60, 40, Math.sin(alpha) * 60);
+                spotLight.setDirectionToTarget(BABYLON.Vector3.Zero());
+                alpha += 0.01;
+            });
+
+            return scene;
+        }
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

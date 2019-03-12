@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>模型朝向射线拾取</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+            var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(10, 8, -5), scene);
+            camera.fov = .6;
+            camera.setTarget(BABYLON.Vector3.Zero());
+            camera.attachControl(canvas, false);
+            var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = .5;
+
+
+            var box, boxTarget;
+
+            var ground = BABYLON.Mesh.CreateGround("ground1", 6, 6, 2, scene);
+            ground.position.y = -.1;
+            var mat = new BABYLON.StandardMaterial("mat1", scene);
+            mat.alpha = .2;
+            ground.material = mat;
+
+            box = BABYLON.Mesh.CreateBox("box1", .5, scene);
+            box.position.x = 2;
+            box.position.y = 1;
+
+            boxTarget = BABYLON.Mesh.CreateBox("box2", 1, scene);
+            boxTarget.position.x = 2;
+            boxTarget.position.z = 2;
+            boxTarget.scaling.scaleInPlace(.5);
+
+            box.lookAt(boxTarget.position);
+
+            scene.render();
+
+            var ray = new BABYLON.Ray();
+            var rayHelper = new BABYLON.RayHelper(ray);
+
+            var localMeshDirection = new BABYLON.Vector3(0, 0, 1);
+            var localMeshOrigin = new BABYLON.Vector3(0, 0, 0);
+            var length = 3;
+
+            rayHelper.attachToMesh(box, localMeshDirection, localMeshOrigin, length);
+            rayHelper.show(scene);
+
+            box.showBoundingBox = true;
+            boxTarget.showBoundingBox = true;
+            ground.showBoundingBox = true;
+
+            var sphere = BABYLON.MeshBuilder.CreateSphere('', {diameter: .15}, scene);
+            sphere.setEnabled(false);
+
+            scene.registerBeforeRender(function(){
+
+                box.rotation.y += .01;
+
+                var hitInfo = ray.intersectsMeshes([boxTarget]);
+
+                if(hitInfo.length){
+                    //console.log(hitInfo);
+                    sphere.setEnabled(true);
+                    sphere.position.copyFrom(hitInfo[0].pickedPoint);
+                }else{
+                    sphere.setEnabled(false);
+                }
+
+            });
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

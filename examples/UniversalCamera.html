@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>通用相机UniversalCamera案例</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            // 创建场景对象
+            var scene = new BABYLON.Scene(engine);
+
+            // 实例化相机，并传入相关值: 名称，位置，场景对象
+            var camera = new BABYLON.UniversalCamera("UniversalCamera", new BABYLON.Vector3(0, 0, -10), scene);
+
+            // 使用setTarget方法设置相机交点，并传入一个场景的位置点
+            camera.setTarget(BABYLON.Vector3.Zero());
+
+            // 设置相机将事件绑定到画布上面
+            camera.attachControl(canvas, true);
+
+            // 创建一个平衡光，将灯光位置设置到0 1 0
+            var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0, 1, 0), scene);
+
+            //创建一个盒子
+            var myBox = BABYLON.MeshBuilder.CreateBox("myBox", {height: 3, width: 2, depth: 2}, scene);
+            myBox.position.x = -3;
+            myBox.position.y = 1;
+
+            // 创建一个球题 支持六个配置项 名称, 分割段数, 直径, 放置的场景, updatable, sideOrientation
+            var sphere = BABYLON.MeshBuilder.CreateSphere('sphere1', {diameter: 2, diameterX: 3, arc: 0.8}, scene);
+            sphere.position.y = 1;
+
+            //创建一个平面
+            var myPlane = BABYLON.MeshBuilder.CreatePlane("myPlane", {width: 3, height: 2}, scene);
+            myPlane.position.x = 3;
+            myPlane.position.y = 2;
+
+            // 创建地面
+            var ground = BABYLON.MeshBuilder.CreateGround('ground1', {width: 6, height: 4, subdivsions: 4}, scene);
+            ground.position.y = -2;
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

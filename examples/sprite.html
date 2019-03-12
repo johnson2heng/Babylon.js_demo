@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>精灵</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            // 创建相机和光源
+            var light = new BABYLON.PointLight("Point", new BABYLON.Vector3(5, 10, 5), scene);
+            var camera = new BABYLON.ArcRotateCamera("Camera", 1, 0.8, 8, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+
+            // 创建一个精灵管理器来优化GPU资源
+            // 配置项 : 名称, 图像路径, 容量, 大小, 场景对象
+            var spriteManagerTrees = new BABYLON.SpriteManager("treesManager", "../images/palm.png", 2000, 800, scene);
+
+            //我们创建了两千颗树，并随机一个位置
+            for (var i = 0; i < 2000; i++) {
+                var tree = new BABYLON.Sprite("tree", spriteManagerTrees);
+                tree.position.x = Math.random() * 100 - 50;
+                tree.position.z = Math.random() * 100 - 50;
+                tree.isPickable = true;
+
+                //有一些倒掉的树
+                if (Math.round(Math.random() * 5) === 0) {
+                    tree.angle = Math.PI * 90 / 180;
+                    tree.position.y = -0.3;
+                }
+            }
+
+            //创建角色精灵管理器
+            var spriteManagerPlayer = new BABYLON.SpriteManager("playerManager", "../images/player.png", 2, 64, scene);
+
+            // 第一个活跃的角色
+            var player = new BABYLON.Sprite("player", spriteManagerPlayer);
+            player.playAnimation(0, 43, true, 100);
+            player.position.y = -0.3;
+            player.size = 0.3;
+            player.isPickable = true;
+
+            // 第二个站立的角色
+            var player2 = new BABYLON.Sprite("player2", spriteManagerPlayer);
+            player2.stopAnimation(); // 没有动画
+            player2.cellIndex = 2; // 设置显示帧
+            player2.position.y = -0.3;
+            player2.position.x = 1;
+            player2.size = 0.3;
+            player2.invertU = 0; //是否在U轴反转UV坐标
+            player2.isPickable = true;
+
+
+            // Picking
+            spriteManagerTrees.isPickable = true;
+            spriteManagerPlayer.isPickable = true;
+
+            scene.onPointerDown = function (evt) {
+                var pickResult = scene.pickSprite(this.pointerX, this.pointerY);
+                if (pickResult.hit) {
+                    pickResult.pickedSprite.angle += 0.5;
+                }
+            };
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

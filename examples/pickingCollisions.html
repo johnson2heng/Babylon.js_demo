@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>鼠标拾取</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            // 设置点光源和自由相机
+            var light0 = new BABYLON.PointLight("Omni", new BABYLON.Vector3(0, 10, 20), scene);
+            var freeCamera = new BABYLON.FreeCamera("FreeCamera", new BABYLON.Vector3(0, 0, -30), scene);
+
+            // 枪击的平面
+            var impact = BABYLON.Mesh.CreatePlane("impact", 1, scene);
+            impact.material = new BABYLON.StandardMaterial("impactMat", scene);
+            impact.material.diffuseTexture = new BABYLON.Texture("../images/impact.png", scene);
+            impact.material.diffuseTexture.hasAlpha = true;
+            impact.position = new BABYLON.Vector3(0, 0, -0.1);
+
+            //Wall
+            var wall = BABYLON.Mesh.CreatePlane("wall", 20.0, scene);
+            wall.material = new BABYLON.StandardMaterial("wallMat", scene);
+            wall.material.emissiveColor = new BABYLON.Color3(0.5, 1, 0.5);
+
+            //When pointer down event is raised
+            scene.onPointerDown = function (evt, pickResult) {
+                // if the click hits the ground object, we change the impact position
+                if (pickResult.hit) {
+                    var indices = pickResult.pickedMesh.getIndices();
+                    var index0 = indices[pickResult.faceId * 3];
+                    var index1 = indices[pickResult.faceId * 3 + 1];
+                    var index2 = indices[pickResult.faceId * 3 + 2];
+
+                    //拾取到的面的三个顶点的下标
+                    console.log(index0, index1, index2);
+
+                    impact.position.x = pickResult.pickedPoint.x;
+                    impact.position.y = pickResult.pickedPoint.y;
+
+                    console.log(pickResult);
+                }
+            };
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

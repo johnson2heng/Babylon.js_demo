@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>设置单个页面纹理的图片位置</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color3(.5, .5, .5);
+
+            // camera
+            var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 0, new BABYLON.Vector3(0, 0, -0), scene); //创建一个围绕原点中心旋转并始终只想原点的相机
+            camera.setPosition(new BABYLON.Vector3(0, 0, -20));// 设置相机位置
+            camera.attachControl(canvas, true);// 相机事件绑定到canvas对象上面
+
+            //创建一个场景的平衡光
+            var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.7;
+
+            //创建一个跟随相机位置的点光源
+            var pl = new BABYLON.PointLight("pl", BABYLON.Vector3.Zero(), scene);
+            pl.intensity = 0.5;
+
+            //创建一个物理材质
+            var mat = new BABYLON.StandardMaterial("mat", scene);
+            var texture = new BABYLON.Texture("http://jerome.bousquie.fr/BJS/images/spriteAtlas.png", scene); //创建一个纹理
+            mat.diffuseTexture = texture; //设置物理材质的默认纹理默认为当前纹理
+
+            //这张纹理的图片上面的小人有四行，每行有六个小人。
+            var columns = 6;  // 6 columns
+            var rows = 4;  // 4 rows
+
+            //声明一个包含六个空值的数组作为面的uv映射
+            var faceUV = new Array(6);
+
+            //注意纹理映射是从左下角到右上角
+            for (var i = 0; i < 6; i++) {
+                //每个值为四维数字，分别代表渲染的 起点x轴，起点y轴，终点x轴，终点y轴
+                faceUV[i] = new BABYLON.Vector4(i / columns, 3/rows, (i + 1) / columns, 1);
+            }
+
+            //设置立方体盒子的配置项，并将面的uv映射赋值
+            var options = {
+                width: 10,
+                height: 6,
+                depth: 5,
+                faceUV: faceUV
+            };
+
+            //创建立方体
+            var box = BABYLON.MeshBuilder.CreateBox('box', options, scene);
+            box.material = mat; //设置立方体的材质为创建的物理材质
+
+            //registerBeforeRender 每次场景渲染前的回调，将点光源的位置设置在相机的位置上
+            scene.registerBeforeRender(function () {
+                pl.position = camera.position;
+            });
+
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

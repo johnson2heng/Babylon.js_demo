@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>粒子系统</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            // Setup environment
+            var light0 = new BABYLON.PointLight("Omni", new BABYLON.Vector3(0, 2, 8), scene);
+            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 20, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+
+            // Fountain object
+            var fountain = BABYLON.Mesh.CreateBox("foutain", 1.0, scene);
+
+            // Ground
+            var ground = BABYLON.Mesh.CreatePlane("ground", 50.0, scene);
+            ground.position = new BABYLON.Vector3(0, -10, 0);
+            ground.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
+
+            ground.material = new BABYLON.StandardMaterial("groundMat", scene);
+            ground.material.backFaceCulling = false;
+            ground.material.diffuseColor = new BABYLON.Color3(0.3, 0.3, 1);
+
+            // 创建粒子系统
+            var particleSystem = new BABYLON.ParticleSystem("particles", 2000, scene);
+
+            //添加粒子纹理
+            particleSystem.particleTexture = new BABYLON.Texture("../images/flare.png", scene);
+
+            // 设置粒子的出现位置
+            particleSystem.emitter = fountain; // 设置立方体为发射器
+            particleSystem.minEmitBox = new BABYLON.Vector3(-1, 0, -1); // 发射盒子的开始点
+            particleSystem.maxEmitBox = new BABYLON.Vector3(1, 0, 1); // 发射盒子的最大点
+
+            // 设置粒子的声音
+            particleSystem.color1 = new BABYLON.Color4(0.7, 0.8, 1.0, 1.0);
+            particleSystem.color2 = new BABYLON.Color4(0.2, 0.5, 1.0, 1.0);
+            particleSystem.colorDead = new BABYLON.Color4(0, 0, 0.2, 0.0);
+
+            // 设置粒子的最大值和最小值
+            particleSystem.minSize = 0.1;
+            particleSystem.maxSize = 0.5;
+
+            // 设置粒子的存在时间最大值和最小值
+            particleSystem.minLifeTime = 0.3;
+            particleSystem.maxLifeTime = 1.5;
+
+            // Emission rate设置发射速率
+            particleSystem.emitRate = 1500;
+
+            // 混合模式: BLENDMODE_ONEONE, or BLENDMODE_STANDARD
+            particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
+
+            // 设置粒子的重力
+            particleSystem.gravity = new BABYLON.Vector3(0, -9.81, 0);
+
+            // 每个粒子发射后的方向
+            particleSystem.direction1 = new BABYLON.Vector3(-7, 8, 3);
+            particleSystem.direction2 = new BABYLON.Vector3(7, 8, -3);
+
+            //角速度，值为弧度
+            particleSystem.minAngularSpeed = 0;
+            particleSystem.maxAngularSpeed = Math.PI;
+
+            // 速度
+            particleSystem.minEmitPower = 1;
+            particleSystem.maxEmitPower = 3;
+            particleSystem.updateSpeed = 0.005;
+
+            // 开启粒子系统
+            particleSystem.start();
+
+            // 制作盒子的动画
+            var keys = [];
+            var animation = new BABYLON.Animation("animation", "rotation.x", 30, BABYLON.Animation.ANIMATIONTYPE_FLOAT,
+                BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+            // 初始值为0
+            keys.push({
+                frame: 0,
+                value: 0
+            });
+
+            // 50帧时选择了180度
+            keys.push({
+                frame: 50,
+                value: Math.PI
+            });
+
+            // 100帧的时回到初始旋转度
+            keys.push({
+                frame: 100,
+                value: 0
+            });
+
+            // 开启动画
+            animation.setKeys(keys);
+            fountain.animations.push(animation);
+            scene.beginAnimation(fountain, 0, 100, true);
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>
