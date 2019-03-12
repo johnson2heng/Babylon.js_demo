@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>用两个渲染BLENDMODE_MULTIPLY然后渲染BLENDMODE_ADD案例</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+
+            // Global variables
+            var updatedPosition = 0;
+
+            // This creates a basic Babylon Scene object (non-mesh)
+            var scene = new BABYLON.Scene(engine);
+
+            // Set up environment
+            var hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("../images/Runyon_Canyon_A_2k_cube_specular.dds", scene);
+            hdrTexture.name = "envTex";
+            hdrTexture.gammaSpace = false;
+            scene.environmentTexture = hdrTexture;
+
+            // Camera
+            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 1.25, 50, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+
+            // Analytical Light
+            var directionalLight = new BABYLON.DirectionalLight("directional", new BABYLON.Vector3(0.5, -2.0, 0.0), scene);
+
+            // Scene color
+            scene.clearColor = new BABYLON.Color4(0.6, 0.7, 0.6, 1);
+
+            //Ground
+            var ground = BABYLON.Mesh.CreatePlane("ground", 500.0, scene);
+            ground.position = new BABYLON.Vector3(0, 0, 0);
+            ground.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
+
+            var groundMat = new BABYLON.PBRMetallicRoughnessMaterial("groundMat", scene);
+            groundMat.baseTexture = new BABYLON.Texture("../images/rockyGround_basecolor.png", scene);
+            groundMat.normalTexture = new BABYLON.Texture("../images/rockyGround_normal.png", scene);
+            groundMat.metallicRoughnessTexture = new BABYLON.Texture("../images/rockyGround_metalRough.png", scene);
+            groundMat.baseTexture.uScale = 40.0;
+            groundMat.baseTexture.vScale = 40.0;
+            groundMat.normalTexture.uScale = 40.0;
+            groundMat.normalTexture.vScale = 40.0;
+            groundMat.metallicRoughnessTexture.uScale = 40.0;
+            groundMat.metallicRoughnessTexture.vScale = 40.0;
+            ground.material = groundMat;
+            ground.material.backFaceCulling = false;
+
+            // Set up new rendering pipeline
+            var pipeline = new BABYLON.DefaultRenderingPipeline("default", true, scene);
+
+            // Tone mapping
+            scene.imageProcessingConfiguration.toneMappingEnabled = true;
+            scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;
+            scene.imageProcessingConfiguration.exposure = 1;
+
+            // Bloom
+            pipeline.bloomEnabled = true;
+            pipeline.bloomThreshold = 0.8;
+            pipeline.bloomWeight = 0.3;
+            pipeline.bloomKernel = 64;
+            pipeline.bloomScale = 0.9;
+
+            // Spawn particle system on key press
+            document.addEventListener('keydown', LaunchBarrel);
+
+            // Remove listeners when scene disposed
+            scene.onDisposeObservable.add(function()
+            {
+                document.removeEventListener('keydown', LaunchBarrel);
+            });
+
+            function LaunchBarrel()
+            {
+                if(event.keyCode == 32)
+                {
+                    // Create random position
+                    var min = -10.0;
+                    var max = 10.0;
+                    var randPosX = Math.random() * (max - min) + min;
+                    var randPosZ = Math.random() * (max - min) + min;
+                    Explode(new BABYLON.Vector3(randPosX, 0.0, randPosZ));
+                }
+            }
+
+            function Explode(impact)
+            {
+                // Create default particle systems
+                var fireBlast = BABYLON.ParticleHelper.CreateDefault(impact, 100);
+
+                // Emitter
+                var fireBlastHemisphere = fireBlast.createHemisphericEmitter(.2, 0);
+
+                // Set emission rate
+                fireBlast.emitRate = 5000;
+
+                // Start size
+                fireBlast.minSize = 6;
+                fireBlast.maxSize = 12;
+
+                // Lifetime
+                fireBlast.minLifeTime = 1;
+                fireBlast.maxLifeTime = 3;
+
+                // Emission power
+                fireBlast.minEmitPower = 30;
+                fireBlast.maxEmitPower = 60;
+
+                // Limit velocity over time
+                fireBlast.addLimitVelocityGradient(0, 40);
+                fireBlast.addLimitVelocityGradient(0.120, 12.983);
+                fireBlast.addLimitVelocityGradient(0.445, 1.780);
+                fireBlast.addLimitVelocityGradient(0.691, 0.502);
+                fireBlast.addLimitVelocityGradient(0.930, 0.05);
+                fireBlast.addLimitVelocityGradient(1.0, 0);
+
+                fireBlast.limitVelocityDamping = 0.9;
+
+                // Start rotation
+                fireBlast.minInitialRotation = -Math.PI / 2;
+                fireBlast.maxInitialRotation = Math.PI / 2;
+
+                // Texture
+                fireBlast.particleTexture = new BABYLON.Texture("../images/ExplosionSim_Sample.png", scene);
+                fireBlast.blendMode = BABYLON.ParticleSystem.BLENDMODE_MULTIPLYADD;
+
+                // Color over life
+                fireBlast.addColorGradient(0.0, new BABYLON.Color4(1, 1, 1, 0));
+                fireBlast.addColorGradient(0.1, new BABYLON.Color4(1, 1, 1, 1));
+                fireBlast.addColorGradient(0.9, new BABYLON.Color4(1, 1, 1, 1));
+                fireBlast.addColorGradient(1.0, new BABYLON.Color4(1, 1, 1, 0));
+
+                // // Defines the color ramp to apply
+                fireBlast.addRampGradient(0.0, new BABYLON.Color3(1, 1, 1));
+                fireBlast.addRampGradient(0.09, new BABYLON.Color3(209/255, 204/255, 15/255));
+                fireBlast.addRampGradient(0.18, new BABYLON.Color3(221/255, 120/255, 14/255));
+                fireBlast.addRampGradient(0.28, new BABYLON.Color3(200/255, 43/255, 18/255));
+                fireBlast.addRampGradient(0.47, new BABYLON.Color3(115/255, 22/255, 15/255));
+                fireBlast.addRampGradient(0.88, new BABYLON.Color3(14/255, 14/255, 14/255));
+                fireBlast.addRampGradient(1.0, new BABYLON.Color3(14/255, 14/255, 14/255));
+                fireBlast.useRampGradients = true;
+
+                // Defines the color remapper over time
+                fireBlast.addColorRemapGradient(0, 0, 0.1);
+                fireBlast.addColorRemapGradient(0.2, 0.1, 0.8);
+                fireBlast.addColorRemapGradient(0.3, 0.2, 0.85);
+                fireBlast.addColorRemapGradient(0.35, 0.4, 0.85);
+                fireBlast.addColorRemapGradient(0.4, 0.5, 0.9);
+                fireBlast.addColorRemapGradient(0.5, 0.95, 1.0);
+                fireBlast.addColorRemapGradient(1.0, 0.95, 1.0);
+
+                // Particle system start
+                fireBlast.start(30);
+                fireBlast.targetStopDuration = .4;
+
+                // Animation update speed
+                fireBlast.updateSpeed = 1/60;
+
+                // Rendering order
+                fireBlast.renderingGroupId = 1;
+            }
+
+
+            // 添加轴向辅助线
+            var showAxis = function (size) {
+                var makeTextPlane = function (text, color, size) {
+                    var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+                    dynamicTexture.hasAlpha = true;
+                    dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+                    var plane = new BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
+                    plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+                    plane.material.backFaceCulling = false;
+                    plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+                    plane.material.diffuseTexture = dynamicTexture;
+                    return plane;
+                };
+
+                var axisX = BABYLON.Mesh.CreateLines("axisX", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
+                    new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
+                ], scene);
+                axisX.color = new BABYLON.Color3(1, 0, 0);
+                var xChar = makeTextPlane("X", "red", size / 10);
+                xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
+                var axisY = BABYLON.Mesh.CreateLines("axisY", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(-0.05 * size, size * 0.95, 0),
+                    new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(0.05 * size, size * 0.95, 0)
+                ], scene);
+                axisY.color = new BABYLON.Color3(0, 1, 0);
+                var yChar = makeTextPlane("Y", "green", size / 10);
+                yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
+                var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, -0.05 * size, size * 0.95),
+                    new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, 0.05 * size, size * 0.95)
+                ], scene);
+                axisZ.color = new BABYLON.Color3(0, 0, 1);
+                var zChar = makeTextPlane("Z", "blue", size / 10);
+                zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
+            };
+
+            showAxis(10);
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>
