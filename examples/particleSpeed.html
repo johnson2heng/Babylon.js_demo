@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>粒子修改变换中心--冒烟的效果</title>
+    <title>粒子的运动速度变化</title>
     <style>
         html, body {
             overflow: hidden;
@@ -35,94 +35,69 @@
 
         // 创建场景并返回场景对象
         var createScene = function () {
-            //场景和相机
             var scene = new BABYLON.Scene(engine);
-            scene.clearColor = new BABYLON.Color3(0.0, 0.0, 0.0)
-            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 5, new BABYLON.Vector3(0, 0, 0), scene);
+
+            // 设置光和相机
+            var light0 = new BABYLON.PointLight("Omni", new BABYLON.Vector3(0, 2, 8), scene);
+            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 20, new BABYLON.Vector3(0, 0, 0), scene);
             camera.attachControl(canvas, true);
 
-            //光
-            var light = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0, 3, 3), scene)
-            var ambient = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene);
-            ambient.intensity = 0.9;
+            // 创建一个发射器对象
+            var fountain = BABYLON.Mesh.CreateBox("foutain", 0.01, scene);
 
-            // 创建发射器
-            var emitter = new BABYLON.ConeParticleEmitter();
-            //emitter.position = new BABYLON.Vector3(0.0, 0.6, 0.0);
+            // 粒子系统
+            var particleSystem = new BABYLON.ParticleSystem("particles", 2000, scene);
 
-            //var fountain = BABYLON.Mesh.CreateBox("fountain", 0.01, scene);
-            //创建一个发射器位置对象
-            var fountain = BABYLON.MeshBuilder.CreateCylinder("fountain", {height: .01, diameter: 0.2}, scene);
-            fountain.position.y = 0.5;
-            var child = new BABYLON.TransformNode();
-            child.parent = fountain;
-            child.position.y = 0.5;
+            //粒子材质
+            particleSystem.particleTexture = new BABYLON.Texture("../images/flare.png", scene);
 
-            //创建一个圆柱
-            var cup = BABYLON.MeshBuilder.CreateCylinder("cup", {height: 1, diameter: 0.9}, scene);
+            // 设置立方体为发射器
+            particleSystem.emitter = fountain; // the starting object, the emitter
+            var emitterType = new BABYLON.SphereParticleEmitter(); //创建一个球型发射模式
+            emitterType.radius = 5;
+            emitterType.radiusRange = 0;
 
-            // 圆柱材质
-            var cupMat = new BABYLON.StandardMaterial("coreMat", scene)
-            cupMat.diffuseColor = new BABYLON.Color3(0.3773, 0.0930, 0.0266);
+            particleSystem.particleEmitterType = emitterType;
 
-            fountain.material = cupMat;
-            cup.material = cupMat;
+            // 设置颜色渐变
+            particleSystem.color1 = new BABYLON.Color4(0.7, 0.8, 1.0, 1.0);
+            particleSystem.color2 = new BABYLON.Color4(0.2, 0.5, 1.0, 1.0);
+            particleSystem.colorDead = new BABYLON.Color4(0, 0, 0.2, 0.0);
 
-            //粒子系统
-            var particleSystem = new BABYLON.ParticleSystem("particles", 30 , scene, null, true);
-            particleSystem.particleTexture = new BABYLON.Texture("../images/T_SteamSpriteSheet.png", scene, true, false, BABYLON.Texture.TRILINEAR_SAMPLINGMODE);
+            // 设置粒子大小
+            particleSystem.minSize = 0.1;
+            particleSystem.maxSize = 0.5;
 
-            //设置粒子纹理帧
-            particleSystem.startSpriteCellID = 0;
-            particleSystem.endSpriteCellID = 31;
-            particleSystem.spriteCellHeight = 256;
-            particleSystem.spriteCellWidth = 128;
-            particleSystem.spriteCellChangeSpeed = 4;
+            // 设置粒子显示时间
+            particleSystem.minLifeTime = 0.3;
+            particleSystem.maxLifeTime = 1.5;
 
-            particleSystem.minScaleX = 1.0;
-            particleSystem.minScaleY = 2.0;
-            particleSystem.maxScaleX = 1.0;
-            particleSystem.maxScaleY = 2.0;
-
-            particleSystem.addSizeGradient(0, 0.0, 0.0);
-            particleSystem.addSizeGradient(1.0, 1, 1);
-
-            particleSystem.translationPivot = new BABYLON.Vector2(0, -0.5);
-
-            // 粒子产生的类型
-            var radius = 0.3;
-            var angle = Math.PI;
-            var coneEmitter = new BABYLON.ConeParticleEmitter(radius, angle);
-
-            particleSystem.particleEmitterType = coneEmitter;
-            particleSystem.emitter= child;
-
-            // 显示时间
-            particleSystem.minLifeTime = 4.0;
-            particleSystem.maxLifeTime = 4.0;
-
-            // 颜色
-            particleSystem.addColorGradient(0, new BABYLON.Color4(1, 1, 1, 0));
-            particleSystem.addColorGradient(0.5, new BABYLON.Color4(1, 1, 1, 70/255));
-            particleSystem.addColorGradient(1.0, new BABYLON.Color4(1, 1, 1, 0));
-
-            // 产生速率
-            particleSystem.emitRate = 6 ;
+            // 设置产生速率
+            particleSystem.emitRate = 1500;
 
             // 混合模式 : BLENDMODE_ONEONE, or BLENDMODE_STANDARD
-            particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+            particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
 
-            // 重力
+            // 设置重力
             particleSystem.gravity = new BABYLON.Vector3(0, 0, 0);
 
-            // Speed
-            particleSystem.minEmitPower = 0;
-            particleSystem.maxEmitPower = 0 ;
-            particleSystem.updateSpeed = 1/60;
+            // 旋转速度
+            particleSystem.minAngularSpeed = 0;
+            particleSystem.maxAngularSpeed = Math.PI;
 
-            // 启动粒子系统
+            //设置速度
+            particleSystem.minEmitPower = 1;
+            particleSystem.maxEmitPower = 1;
+            particleSystem.updateSpeed = 0.01;
+
+            //设置阶段速度
+            particleSystem.addVelocityGradient(0, 3, 5);
+            particleSystem.addVelocityGradient(1.0, -5, -10);
+
+            // 运行粒子系统
             particleSystem.start();
-            
+
+
             // 添加轴向辅助线
             var showAxis = function (size) {
                 var makeTextPlane = function (text, color, size) {

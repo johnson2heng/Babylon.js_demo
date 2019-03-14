@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>粒子修改变换中心--冒烟的效果</title>
+    <title>现在粒子的极限速度</title>
     <style>
         html, body {
             overflow: hidden;
@@ -35,92 +35,67 @@
 
         // 创建场景并返回场景对象
         var createScene = function () {
-            //场景和相机
             var scene = new BABYLON.Scene(engine);
-            scene.clearColor = new BABYLON.Color3(0.0, 0.0, 0.0)
-            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 5, new BABYLON.Vector3(0, 0, 0), scene);
+
+            // 相机
+            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 40, new BABYLON.Vector3(0, 0, 0), scene);
             camera.attachControl(canvas, true);
 
-            //光
-            var light = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0, 3, 3), scene)
-            var ambient = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene);
-            ambient.intensity = 0.9;
+            // 粒子系统
+            var particleSystem = new BABYLON.ParticleSystem("particles", 500, scene);
 
-            // 创建发射器
-            var emitter = new BABYLON.ConeParticleEmitter();
-            //emitter.position = new BABYLON.Vector3(0.0, 0.6, 0.0);
+            //粒子纹理
+            particleSystem.particleTexture = new BABYLON.Texture("../images/flare.png", scene);
 
-            //var fountain = BABYLON.Mesh.CreateBox("fountain", 0.01, scene);
-            //创建一个发射器位置对象
-            var fountain = BABYLON.MeshBuilder.CreateCylinder("fountain", {height: .01, diameter: 0.2}, scene);
-            fountain.position.y = 0.5;
-            var child = new BABYLON.TransformNode();
-            child.parent = fountain;
-            child.position.y = 0.5;
-
-            //创建一个圆柱
-            var cup = BABYLON.MeshBuilder.CreateCylinder("cup", {height: 1, diameter: 0.9}, scene);
-
-            // 圆柱材质
-            var cupMat = new BABYLON.StandardMaterial("coreMat", scene)
-            cupMat.diffuseColor = new BABYLON.Color3(0.3773, 0.0930, 0.0266);
-
-            fountain.material = cupMat;
-            cup.material = cupMat;
-
-            //粒子系统
-            var particleSystem = new BABYLON.ParticleSystem("particles", 30 , scene, null, true);
-            particleSystem.particleTexture = new BABYLON.Texture("../images/T_SteamSpriteSheet.png", scene, true, false, BABYLON.Texture.TRILINEAR_SAMPLINGMODE);
-
-            //设置粒子纹理帧
-            particleSystem.startSpriteCellID = 0;
-            particleSystem.endSpriteCellID = 31;
-            particleSystem.spriteCellHeight = 256;
-            particleSystem.spriteCellWidth = 128;
-            particleSystem.spriteCellChangeSpeed = 4;
-
-            particleSystem.minScaleX = 1.0;
-            particleSystem.minScaleY = 2.0;
-            particleSystem.maxScaleX = 1.0;
-            particleSystem.maxScaleY = 2.0;
-
-            particleSystem.addSizeGradient(0, 0.0, 0.0);
-            particleSystem.addSizeGradient(1.0, 1, 1);
-
-            particleSystem.translationPivot = new BABYLON.Vector2(0, -0.5);
-
-            // 粒子产生的类型
-            var radius = 0.3;
-            var angle = Math.PI;
-            var coneEmitter = new BABYLON.ConeParticleEmitter(radius, angle);
-
-            particleSystem.particleEmitterType = coneEmitter;
-            particleSystem.emitter= child;
-
-            // 显示时间
-            particleSystem.minLifeTime = 4.0;
-            particleSystem.maxLifeTime = 4.0;
+            // 粒子发射器位置
+            particleSystem.emitter = BABYLON.Vector3.Zero(); // 默认原点
 
             // 颜色
-            particleSystem.addColorGradient(0, new BABYLON.Color4(1, 1, 1, 0));
-            particleSystem.addColorGradient(0.5, new BABYLON.Color4(1, 1, 1, 70/255));
-            particleSystem.addColorGradient(1.0, new BABYLON.Color4(1, 1, 1, 0));
+            particleSystem.color1 = new BABYLON.Color4(0.7, 0.8, 1.0, 1.0);
+            particleSystem.color2 = new BABYLON.Color4(0.2, 0.5, 1.0, 1.0);
+            particleSystem.colorDead = new BABYLON.Color4(0, 0, 0.2, 0.0);
 
-            // 产生速率
-            particleSystem.emitRate = 6 ;
+            // 尺寸
+            particleSystem.minSize = 2;
+            particleSystem.maxSize = 8;
 
-            // 混合模式 : BLENDMODE_ONEONE, or BLENDMODE_STANDARD
-            particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+            // 显示时间
+            particleSystem.minLifeTime = 1.5;
+            particleSystem.maxLifeTime = 1.5;
 
-            // 重力
-            particleSystem.gravity = new BABYLON.Vector3(0, 0, 0);
+            // 发射速率
+            particleSystem.emitRate = 50;
 
-            // Speed
-            particleSystem.minEmitPower = 0;
-            particleSystem.maxEmitPower = 0 ;
+
+            // 发射形状
+            var hemisphericEmitter =new BABYLON.HemisphericParticleEmitter();
+            hemisphericEmitter.radiusRange = 0;
+            hemisphericEmitter.radis = 1.2;
+
+            particleSystem.particleEmitterType = hemisphericEmitter;
+
+            // 限制速度
+            particleSystem.addLimitVelocityGradient(0, 1);
+            particleSystem.addLimitVelocityGradient(0.120, 0.983);
+            particleSystem.addLimitVelocityGradient(0.445, 0.780);
+            particleSystem.addLimitVelocityGradient(0.691, 0.502);
+            particleSystem.addLimitVelocityGradient(0.930, 0.05);
+            particleSystem.addLimitVelocityGradient(1.0, 0);
+
+            particleSystem.limitVelocityDamping = 0.6;
+
+            //整体 的尺寸变化
+            particleSystem.addSizeGradient(0, 0.641);
+            particleSystem.addSizeGradient(0.344, 0.883);
+            particleSystem.addSizeGradient(0.615, 0.965);
+            particleSystem.addSizeGradient(1.0, 1.0);
+
+            // 速度
+            particleSystem.minEmitPower = 30;
+            particleSystem.maxEmitPower = 60;
             particleSystem.updateSpeed = 1/60;
 
-            // 启动粒子系统
+            //开启粒子系统
             particleSystem.start();
             
             // 添加轴向辅助线
