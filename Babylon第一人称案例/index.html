@@ -1,0 +1,67 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width">
+    <title>Babylon.js - Glowing Espilit demo</title>
+    <link rel='stylesheet' href='js/index.css'/>
+    <script src="js/pep.min.js"></script>
+    <script src="js/babylon.js"></script>
+    <script src="js/babylon.inspector.bundle.js"></script>
+    <script src="js/babylon.glTFFileLoader.js "></script>
+    <script src="js/demo.js"></script>
+</head>
+<body>
+<canvas id="renderCanvas" touch-action="none"></canvas>
+<div id="fps"></div>
+<div id="stats"></div>
+<div id="status"></div>
+<div id="controlPanel">
+    <div id="controlsZone">
+        <p>
+            <button id="enableDebug">Debug layer</button>
+        </p>
+        <p>
+            <button id="fullscreen">Fullscreen</button>
+        </p>
+    </div>
+    <div class="tag">Control panel</div>
+    <div class="tag" id="clickableTag"></div>
+</div>
+<div id="cameraPanel">
+    <div id="cameraControlsZone">
+        Active camera:<br>
+        <select id="camerasList"></select>
+        <p>
+            Change control method:
+            <button class="buttonControlPanel" id="touchCamera">
+                <img src="images/camtouchoff.png" class="buttonImg" />Touch camera
+            </button>
+            <button class="buttonControlPanel" id="deviceOrientationCamera">
+                <img src="images/camdeviceoff.png" class="buttonImg" />VR Device orientation camera
+            </button>
+            <button class="buttonControlPanel" id="gamepadCamera">
+                <img src="images/camgamepadjoy.png" class="buttonImg" />Gamepad camera
+            </button>
+            <button class="buttonControlPanel" id="virtualJoysticksCamera">
+                <img src="images/camvirtualjoy.png" class="buttonImg" />Virtual joysticks camera
+            </button>
+            <button class="buttonControlPanel" id="anaglyphCamera">
+                <img src="images/camanagly.png" class="buttonImg" />Anaglyph camera
+            </button>
+        </p>
+        <p>
+            Post-processes:
+            <button class="smallButtonControlPanel" id="toggleFxaa">Toggle FXAA (antialiasing)</button>
+            <button class="smallButtonControlPanel" id="toggleFsaa4">Toggle FSAA 4X (antialiasing)</button>
+            <button class="smallButtonControlPanel" id="toggleBandW">Toggle Black and white</button>
+            <button class="smallButtonControlPanel" id="toggleSepia">Toggle Sepia</button>
+        </p>
+    </div>
+    <div class="cameraTag"><img src="images/camera.png" /></div>
+    <div class="cameraTag" id="cameraClickableTag"></div>
+</div>
+<div id="notSupported" class="hidden">Sorry but your browser does not support WebGL...</div>
+<script src="js/loader.js"></script>
+</body>
+</html>

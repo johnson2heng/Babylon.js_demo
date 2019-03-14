@@ -36,33 +36,31 @@
         // 创建场景并返回场景对象
         var createScene = function () {
 
-            // Global variables
-            var updatedPosition = 0;
-
-            // This creates a basic Babylon Scene object (non-mesh)
+            // 场景对象
             var scene = new BABYLON.Scene(engine);
 
-            // Set up environment
+            // 场景环境贴图
             var hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("../images/Runyon_Canyon_A_2k_cube_specular.dds", scene);
             hdrTexture.name = "envTex";
             hdrTexture.gammaSpace = false;
             scene.environmentTexture = hdrTexture;
 
-            // Camera
+            // 相机
             var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 1.25, 50, new BABYLON.Vector3(0, 0, 0), scene);
             camera.attachControl(canvas, true);
 
-            // Analytical Light
+            // 光
             var directionalLight = new BABYLON.DirectionalLight("directional", new BABYLON.Vector3(0.5, -2.0, 0.0), scene);
 
-            // Scene color
+            // 场景背景色
             scene.clearColor = new BABYLON.Color4(0.6, 0.7, 0.6, 1);
 
-            //Ground
+            // 地面
             var ground = BABYLON.Mesh.CreatePlane("ground", 500.0, scene);
             ground.position = new BABYLON.Vector3(0, 0, 0);
             ground.rotation = new BABYLON.Vector3(Math.PI / 2, 0, 0);
 
+            //地面材质
             var groundMat = new BABYLON.PBRMetallicRoughnessMaterial("groundMat", scene);
             groundMat.baseTexture = new BABYLON.Texture("../images/rockyGround_basecolor.png", scene);
             groundMat.normalTexture = new BABYLON.Texture("../images/rockyGround_normal.png", scene);
@@ -76,7 +74,7 @@
             ground.material = groundMat;
             ground.material.backFaceCulling = false;
 
-            // Set up new rendering pipeline
+            // 创建一个新的渲染管线
             var pipeline = new BABYLON.DefaultRenderingPipeline("default", true, scene);
 
             // Tone mapping
@@ -91,17 +89,18 @@
             pipeline.bloomKernel = 64;
             pipeline.bloomScale = 0.9;
 
-            // Spawn particle system on key press
+            // 绑定键盘按下事件
             document.addEventListener('keydown', LaunchBarrel);
 
-            // Remove listeners when scene disposed
+            // 释放场景时，也取消键盘监听事件
             scene.onDisposeObservable.add(function()
             {
                 document.removeEventListener('keydown', LaunchBarrel);
             });
 
-            function LaunchBarrel()
+            function LaunchBarrel(event)
             {
+                //绑定空格事件
                 if(event.keyCode == 32)
                 {
                     // Create random position
@@ -115,28 +114,28 @@
 
             function Explode(impact)
             {
-                // Create default particle systems
+                // 创建粒子系统
                 var fireBlast = BABYLON.ParticleHelper.CreateDefault(impact, 100);
 
-                // Emitter
+                // 粒子发射器
                 var fireBlastHemisphere = fireBlast.createHemisphericEmitter(.2, 0);
 
-                // Set emission rate
+                // 粒子发射率 /s
                 fireBlast.emitRate = 5000;
 
-                // Start size
+                // 粒子尺寸范围
                 fireBlast.minSize = 6;
                 fireBlast.maxSize = 12;
 
-                // Lifetime
+                // 粒子存活时间
                 fireBlast.minLifeTime = 1;
                 fireBlast.maxLifeTime = 3;
 
-                // Emission power
+                // 发射速度
                 fireBlast.minEmitPower = 30;
                 fireBlast.maxEmitPower = 60;
 
-                // Limit velocity over time
+                // 限制最大速度
                 fireBlast.addLimitVelocityGradient(0, 40);
                 fireBlast.addLimitVelocityGradient(0.120, 12.983);
                 fireBlast.addLimitVelocityGradient(0.445, 1.780);
@@ -146,21 +145,21 @@
 
                 fireBlast.limitVelocityDamping = 0.9;
 
-                // Start rotation
+                // 初始旋转角度
                 fireBlast.minInitialRotation = -Math.PI / 2;
                 fireBlast.maxInitialRotation = Math.PI / 2;
 
-                // Texture
+                // 粒子纹理
                 fireBlast.particleTexture = new BABYLON.Texture("../images/ExplosionSim_Sample.png", scene);
                 fireBlast.blendMode = BABYLON.ParticleSystem.BLENDMODE_MULTIPLYADD;
 
-                // Color over life
+                // 整个粒子系统的生命周期的颜色变化
                 fireBlast.addColorGradient(0.0, new BABYLON.Color4(1, 1, 1, 0));
                 fireBlast.addColorGradient(0.1, new BABYLON.Color4(1, 1, 1, 1));
                 fireBlast.addColorGradient(0.9, new BABYLON.Color4(1, 1, 1, 1));
                 fireBlast.addColorGradient(1.0, new BABYLON.Color4(1, 1, 1, 0));
 
-                // // Defines the color ramp to apply
+                // 定义需要应用的颜色渐变
                 fireBlast.addRampGradient(0.0, new BABYLON.Color3(1, 1, 1));
                 fireBlast.addRampGradient(0.09, new BABYLON.Color3(209/255, 204/255, 15/255));
                 fireBlast.addRampGradient(0.18, new BABYLON.Color3(221/255, 120/255, 14/255));
@@ -168,9 +167,9 @@
                 fireBlast.addRampGradient(0.47, new BABYLON.Color3(115/255, 22/255, 15/255));
                 fireBlast.addRampGradient(0.88, new BABYLON.Color3(14/255, 14/255, 14/255));
                 fireBlast.addRampGradient(1.0, new BABYLON.Color3(14/255, 14/255, 14/255));
-                fireBlast.useRampGradients = true;
+                fireBlast.useRampGradients = true; //开启根据透明度修改颜色
 
-                // Defines the color remapper over time
+                // 设置颜色渐变应用的时间
                 fireBlast.addColorRemapGradient(0, 0, 0.1);
                 fireBlast.addColorRemapGradient(0.2, 0.1, 0.8);
                 fireBlast.addColorRemapGradient(0.3, 0.2, 0.85);
@@ -179,14 +178,14 @@
                 fireBlast.addColorRemapGradient(0.5, 0.95, 1.0);
                 fireBlast.addColorRemapGradient(1.0, 0.95, 1.0);
 
-                // Particle system start
+                // 启动粒子系统，设置粒子系统的运行时间
                 fireBlast.start(30);
                 fireBlast.targetStopDuration = .4;
 
-                // Animation update speed
+                // 动画运行速度，一秒60帧
                 fireBlast.updateSpeed = 1/60;
 
-                // Rendering order
+                // 渲染顺序
                 fireBlast.renderingGroupId = 1;
             }
 
