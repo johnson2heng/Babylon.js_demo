@@ -40,10 +40,8 @@
             var scene = new BABYLON.Scene(engine);
 
             // 场景环境贴图
-            var hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("../images/Runyon_Canyon_A_2k_cube_specular.dds", scene);
-            hdrTexture.name = "envTex";
-            hdrTexture.gammaSpace = false;
-            scene.environmentTexture = hdrTexture;
+            var envTexture = new BABYLON.CubeTexture("../images/Runyon_Canyon_A_2k_cube_specular.dds", scene);
+            scene.createDefaultSkybox(envTexture, true, 1000);
 
             // 相机
             var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 1.25, 50, new BABYLON.Vector3(0, 0, 0), scene);

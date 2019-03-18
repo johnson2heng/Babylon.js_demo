@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>圆锥粒子发射器 粒子产生位置示例</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script src="../js/dat.gui.min.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            scene.clearColor = new BABYLON.Color3(0.0, 0.0, 0.0)
+            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 5, new BABYLON.Vector3(
+                0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+
+            var light = new BABYLON.PointLight("pointLight", new BABYLON.Vector3(0, 3, 3), scene)
+            var ambient = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene);
+            ambient.intensity = 0.9;
+
+            // 粒子发射器对象
+            var emitter = new BABYLON.ConeParticleEmitter();
+            //emitter.position = new BABYLON.Vector3(0.0, 0.6, 0.0);
+
+            //创建一个圆柱
+            var fountain = BABYLON.MeshBuilder.CreateCylinder("fountain", {height: .01, diameter: 0.2}, scene);
+            fountain.position.y = 0.5;
+            var child = new BABYLON.TransformNode();
+            child.parent = fountain;
+            child.position.y = 0.5;
+
+            var cup = BABYLON.MeshBuilder.CreateCylinder("cup", {height: 1, diameter: 0.9}, scene);
+
+            // 圆柱的材质
+            var cupMat = new BABYLON.StandardMaterial("coreMat", scene)
+            cupMat.diffuseColor = new BABYLON.Color3(0.3773, 0.0930, 0.0266);
+            cupMat.specularColor = BABYLON.Color3.Black();
+            cupMat.wireframe = true;
+
+            fountain.material = cupMat;
+            cup.material = cupMat;
+
+            //粒子系统
+            var particleSystem = new BABYLON.ParticleSystem("particles", 30 , scene, null, true);
+            particleSystem.particleTexture = new BABYLON.Texture("../images/T_SteamSpriteSheet.png", scene, true, false, BABYLON.Texture.TRILINEAR_SAMPLINGMODE);
+
+            //粒子系统纹理设置
+            particleSystem.startSpriteCellID = 0;
+            particleSystem.endSpriteCellID = 31;
+            particleSystem.spriteCellHeight = 256;
+            particleSystem.spriteCellWidth = 128;
+            particleSystem.spriteCellChangeSpeed = 4;
+
+            particleSystem.minScaleX = 1.0;
+            particleSystem.minScaleY = 2.0;
+            particleSystem.maxScaleX = 1.0;
+            particleSystem.maxScaleY = 2.0;
+
+            //设置粒子大小渐变
+            particleSystem.addSizeGradient(0, 0.0, 0.0);
+            particleSystem.addSizeGradient(1.0, 1, 1);
+
+            //设置粒子大小缩放中心
+            particleSystem.translationPivot = new BABYLON.Vector2(0, -0.5);
+
+            // 设置锥形粒子发射器
+            var radius = 0.4;
+            var angle = Math.PI;
+            var coneEmitter = new BABYLON.ConeParticleEmitter(radius, angle);
+            coneEmitter.radiusRange = 0;
+            coneEmitter.heightRange = 0;
+
+            particleSystem.particleEmitterType = coneEmitter;
+            particleSystem.emitter= child;
+
+            // 粒子存活时间范围
+            particleSystem.minLifeTime = 4.0;
+            particleSystem.maxLifeTime = 4.0;
+
+            //设置粒子不应用y轴
+            particleSystem.billboardMode = BABYLON.AbstractMesh.BILLBOARDMODE_Y;
+
+            // 颜色渐变
+            particleSystem.addColorGradient(0, new BABYLON.Color4(1, 1, 1, 0));
+            particleSystem.addColorGradient(0.5, new BABYLON.Color4(1, 1, 1, 70/255));
+            particleSystem.addColorGradient(1.0, new BABYLON.Color4(1, 1, 1, 0));
+
+            // 每秒粒子产生量
+            particleSystem.emitRate = 6 ;
+
+            // 混合模式 : BLENDMODE_ONEONE, or BLENDMODE_STANDARD
+            particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+
+            // 设置重力
+            particleSystem.gravity = new BABYLON.Vector3(0, 0, 0);
+
+            // 设置粒子初始速度，以及更新速度，默认按一秒60帧的速度
+            particleSystem.minEmitPower = 0;
+            particleSystem.maxEmitPower = 0 ;
+            particleSystem.updateSpeed = 1/60;
+
+            // 启动粒子系统
+            particleSystem.start();
+
+            // 添加轴向辅助线
+            var showAxis = function (size) {
+                var makeTextPlane = function (text, color, size) {
+                    var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+                    dynamicTexture.hasAlpha = true;
+                    dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+                    var plane = new BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
+                    plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+                    plane.material.backFaceCulling = false;
+                    plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+                    plane.material.diffuseTexture = dynamicTexture;
+                    return plane;
+                };
+
+                var axisX = BABYLON.Mesh.CreateLines("axisX", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
+                    new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
+                ], scene);
+                axisX.color = new BABYLON.Color3(1, 0, 0);
+                var xChar = makeTextPlane("X", "red", size / 10);
+                xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
+                var axisY = BABYLON.Mesh.CreateLines("axisY", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(-0.05 * size, size * 0.95, 0),
+                    new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(0.05 * size, size * 0.95, 0)
+                ], scene);
+                axisY.color = new BABYLON.Color3(0, 1, 0);
+                var yChar = makeTextPlane("Y", "green", size / 10);
+                yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
+                var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, -0.05 * size, size * 0.95),
+                    new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, 0.05 * size, size * 0.95)
+                ], scene);
+                axisZ.color = new BABYLON.Color3(0, 0, 1);
+                var zChar = makeTextPlane("Z", "blue", size / 10);
+                zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
+            };
+
+            showAxis(10);
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>
