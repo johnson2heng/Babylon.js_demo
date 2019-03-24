@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>更清楚的理解基于PCSS的接触硬化阴影  Contact hardening shadow（仅限WebGL2）</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script src="../js/dat.gui.min.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+
+            // 场景对象
+            var scene = new BABYLON.Scene(engine);
+
+            // 相机
+            var camera = new BABYLON.ArcRotateCamera("Camera", 0, 0.8, 90, BABYLON.Vector3.Zero(), scene);
+            camera.lowerBetaLimit = 0.1;
+            camera.upperBetaLimit = (Math.PI / 2) * 0.9;
+            camera.lowerRadiusLimit = 1;
+            camera.upperRadiusLimit = 150;
+            camera.attachControl(canvas, true);
+
+            // 光源
+            //var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(1, -1, 1), scene);
+            var light = new BABYLON.SpotLight("spotLight", new BABYLON.Vector3(-40, 40, -40), new BABYLON.Vector3(1, -1, 1), Math.PI / 5, 30, scene);
+            light.position = new BABYLON.Vector3(-40, 40, -40);
+
+            // 阴影
+            var shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
+            //shadowGenerator.bias = 0.0001;
+            light.shadowMaxZ = 130;
+            light.shadowMinZ = 10;
+            shadowGenerator.useContactHardeningShadow = true;
+            shadowGenerator.setDarkness(0.5);
+
+            var lightSphere = BABYLON.Mesh.CreateSphere("sphere", 10, 2, scene);
+            lightSphere.position = light.position;
+            lightSphere.material = new BABYLON.StandardMaterial("light", scene);
+            lightSphere.material.emissiveColor = new BABYLON.Color3(1, 1, 0);
+
+            // 地面
+            var ground = BABYLON.Mesh.CreateGround("ground", 200, 200, 100, scene, false);
+
+            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
+            groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+            ground.material = groundMaterial;
+
+            var b = BABYLON.Mesh.CreateBox("box", 1, scene, false);
+            b.scaling.y = 20;
+            b.position.y = 10;
+            b.position.x = -10;
+            b.position.z = -10;
+
+            var b1 = BABYLON.Mesh.CreateBox("box", 1, scene, false);
+            b1.scaling.y = 10;
+            b1.position.y = 5;
+            b1.position.x = -0;
+            b1.position.z = -10;
+
+            var b2 = BABYLON.Mesh.CreateBox("box", 1, scene, false);
+            b2.scaling.y = 10;
+            b2.position.y = 5;
+            b2.position.x = -10;
+            b2.position.z = -0;
+
+            shadowGenerator.addShadowCaster(b);
+            shadowGenerator.addShadowCaster(b1);
+            shadowGenerator.addShadowCaster(b2);
+            ground.receiveShadows = true;
+
+            // 动画
+            var alpha = 0;
+            var add = true;
+            scene.registerBeforeRender(function () {
+                if (!add) {
+                    return;
+                }
+
+                b.position.y = (Math.cos(alpha) * 0.5 + 0.5) * 20;
+                alpha += 0.05;
+
+            });
+
+            document.onkeydown = (event)=>{
+
+                if (event.keyCode === 32) {
+                    add = !add;
+                }
+            };
+
+            // 添加轴向辅助线
+            var showAxis = function (size) {
+                var makeTextPlane = function (text, color, size) {
+                    var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+                    dynamicTexture.hasAlpha = true;
+                    dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+                    var plane = new BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
+                    plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+                    plane.material.backFaceCulling = false;
+                    plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+                    plane.material.diffuseTexture = dynamicTexture;
+                    return plane;
+                };
+
+                var axisX = BABYLON.Mesh.CreateLines("axisX", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
+                    new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
+                ], scene);
+                axisX.color = new BABYLON.Color3(1, 0, 0);
+                var xChar = makeTextPlane("X", "red", size / 10);
+                xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
+                var axisY = BABYLON.Mesh.CreateLines("axisY", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(-0.05 * size, size * 0.95, 0),
+                    new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(0.05 * size, size * 0.95, 0)
+                ], scene);
+                axisY.color = new BABYLON.Color3(0, 1, 0);
+                var yChar = makeTextPlane("Y", "green", size / 10);
+                yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
+                var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, -0.05 * size, size * 0.95),
+                    new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, 0.05 * size, size * 0.95)
+                ], scene);
+                axisZ.color = new BABYLON.Color3(0, 0, 1);
+                var zChar = makeTextPlane("Z", "blue", size / 10);
+                zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
+            };
+
+            showAxis(10);
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大每秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>
