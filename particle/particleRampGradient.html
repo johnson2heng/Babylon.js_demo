@@ -91,16 +91,13 @@
             document.addEventListener('keydown', LaunchBarrel);
 
             // 释放场景时，也取消键盘监听事件
-            scene.onDisposeObservable.add(function()
-            {
+            scene.onDisposeObservable.add(function () {
                 document.removeEventListener('keydown', LaunchBarrel);
             });
 
-            function LaunchBarrel(event)
-            {
+            function LaunchBarrel(event) {
                 //绑定空格事件
-                if(event.keyCode == 32)
-                {
+                if (event.keyCode == 32) {
                     // Create random position
                     var min = -10.0;
                     var max = 10.0;
@@ -110,8 +107,7 @@
                 }
             }
 
-            function Explode(impact)
-            {
+            function Explode(impact) {
                 // 创建粒子系统
                 var fireBlast = BABYLON.ParticleHelper.CreateDefault(impact, 100);
 
@@ -159,12 +155,12 @@
 
                 // 定义需要应用的颜色渐变
                 fireBlast.addRampGradient(0.0, new BABYLON.Color3(1, 1, 1));
-                fireBlast.addRampGradient(0.09, new BABYLON.Color3(209/255, 204/255, 15/255));
-                fireBlast.addRampGradient(0.18, new BABYLON.Color3(221/255, 120/255, 14/255));
-                fireBlast.addRampGradient(0.28, new BABYLON.Color3(200/255, 43/255, 18/255));
-                fireBlast.addRampGradient(0.47, new BABYLON.Color3(115/255, 22/255, 15/255));
-                fireBlast.addRampGradient(0.88, new BABYLON.Color3(14/255, 14/255, 14/255));
-                fireBlast.addRampGradient(1.0, new BABYLON.Color3(14/255, 14/255, 14/255));
+                fireBlast.addRampGradient(0.09, new BABYLON.Color3(209 / 255, 204 / 255, 15 / 255));
+                fireBlast.addRampGradient(0.18, new BABYLON.Color3(221 / 255, 120 / 255, 14 / 255));
+                fireBlast.addRampGradient(0.28, new BABYLON.Color3(200 / 255, 43 / 255, 18 / 255));
+                fireBlast.addRampGradient(0.47, new BABYLON.Color3(115 / 255, 22 / 255, 15 / 255));
+                fireBlast.addRampGradient(0.88, new BABYLON.Color3(14 / 255, 14 / 255, 14 / 255));
+                fireBlast.addRampGradient(1.0, new BABYLON.Color3(14 / 255, 14 / 255, 14 / 255));
                 fireBlast.useRampGradients = true; //开启根据透明度索引修改颜色
 
                 // 设置颜色渐变应用的时间
@@ -181,7 +177,7 @@
                 fireBlast.targetStopDuration = .4;
 
                 // 动画运行速度，一秒60帧
-                fireBlast.updateSpeed = 1/60;
+                fireBlast.updateSpeed = 1 / 60;
 
                 // 渲染顺序
                 fireBlast.renderingGroupId = 1;

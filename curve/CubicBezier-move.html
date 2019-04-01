@@ -41,37 +41,41 @@
 
             // 相机
             var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 0, new BABYLON.Vector3(0, 0, -0), scene);
-            camera.setPosition(new BABYLON.Vector3(-10, -10, -100));
+            camera.setPosition(new BABYLON.Vector3(-1, 10, -10));
             camera.attachControl(canvas, true);
 
             // 创建一个球题 支持六个配置项 名称, 分割段数, 直径, 放置的场景, updatable, sideOrientation
-            var sphere = BABYLON.MeshBuilder.CreateSphere('sphere1', {diameter: 1}, scene);
+            var sphere = BABYLON.MeshBuilder.CreateSphere('sphere1', {diameter: .2}, scene);
 
+            //球体自发光
+            var hl = new BABYLON.HighlightLayer("hl1", scene);
+            hl.addMesh(sphere, BABYLON.Color3.Green());
+
+            creatCurve(new BABYLON.Vector3(20*Math.random()-10, 4, 20*Math.random()-10));
 
             // CURVE3 : Bezier Cubic Curve
-
             var cubicBezierVectors = BABYLON.Curve3.CreateCubicBezier(
-                new BABYLON.Vector3(-50, 30, 0),
-                new BABYLON.Vector3(0, 30, 0),
-                new BABYLON.Vector3(30, 30, 0),
-                new BABYLON.Vector3(50, 0, 0),
+                new BABYLON.Vector3(-5, 3, 0),
+                new BABYLON.Vector3(0, 3, 0),
+                new BABYLON.Vector3(3, 3, 0),
+                new BABYLON.Vector3(5, 0, 0),
                 60);
 
             var cubicBezierCurve = BABYLON.Mesh.CreateLines("cbezier", cubicBezierVectors.getPoints(), scene);
             cubicBezierCurve.color = new BABYLON.Color3(1, 0.6, 0);
 
-            let index  = 0;
+            let index = 0;
 
             //每一帧渲染前的运算
             scene.registerBeforeRender(function () {
                 index += 0.005;
-                if(index >= 1) return;
-                sphere.position = getCenter(cubicBezierVectors, index);
+                if (index >= 1) return;
+                sphere.position = getPosition(cubicBezierVectors, index);
             });
 
             /***************************************坐标轴*************************************************/
 
-            // 显示坐标轴
+                // 显示坐标轴
             var showAxis = function (size) {
                     var makeTextPlane = function (text, color, size) {
                         var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
@@ -107,13 +111,13 @@
                     zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
                 };
 
-            showAxis(30);
+            showAxis(3);
 
             return scene;
         };
 
         //获取曲线的某个位置的点的坐标
-        function getCenter(cubicBezierVectors, lerp) {
+        function getPosition(cubicBezierVectors, lerp) {
             let lenList = []; //存储每两个点距离的数组
             let array = cubicBezierVectors.getPoints();
 
@@ -124,10 +128,8 @@
 
             let distance = cubicBezierVectors.length();
 
-            console.log(0, lerp*distance);
-
             //计算当前重点落在了哪个值上面
-            let index = getCenterIndex(0, lerp*distance);
+            let index = getCenterIndex(0, lerp * distance);
 
             //todo:求出下标
             return BABYLON.Vector3.Lerp(array[index.index], array[index.index + 1], index.step);
@@ -140,11 +142,43 @@
                         index: index,
                         step: distance / lenList[index]
                     };
-                }
-                else {
+                } else {
                     return getCenterIndex(index + 1, distance - lenList[index]);
                 }
             }
+        }
+
+        //通过某个位置生成曲线
+        function creatCurve(vector) {
+            //获取到基于y轴的旋转
+            console.log(getAngle(vector));
+
+            //根据起点和终点获取到贝塞尔曲线变换的另外两个值
+            let end = new BABYLON.Vector2(vector.x, vector.z);
+
+            let bezierA = new BABYLON.Vector3(vector.x/2, vector.y, vector.z/2); //离起点较劲的那个点
+            let bezierB = new BABYLON.Vector3(vector.x*.8, vector.y, vector.z*.8); //离终点较劲的那个点
+
+            var cubicBezierVectors = BABYLON.Curve3.CreateCubicBezier(
+                new BABYLON.Vector3(0, vector.y, 0),
+                bezierA,
+                bezierB,
+                new BABYLON.Vector3(vector.x, 0, vector.z),
+                60);
+
+            var cubicBezierCurve = BABYLON.Mesh.CreateLines("cbezier", cubicBezierVectors.getPoints(), scene);
+            cubicBezierCurve.color = new BABYLON.Color3(1, 1, 0);
+
+            return cubicBezierVectors;
+        }
+
+        //获得当前二维向量对于x轴的偏移
+        function getAngle(vector3) {
+            var angle = Math.atan2(vector3.z, vector3.x);
+
+            if (angle < 0) angle += 2 * Math.PI;
+
+            return angle / Math.PI * 180 - 90;
         }
 
         // 获取到创建的场景

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>巨炮的案例</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom3-3.js"></script>
+<script src="../js/babylonjs.loaders.min.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+
+            // 创建场景
+            var scene = new BABYLON.Scene(engine);
+
+            // 相机
+            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 1.25, 200, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+
+            // 光
+            var directionalLight = new BABYLON.DirectionalLight("directional", new BABYLON.Vector3(-50, -20.0, -20.0), scene);
+
+            // 创建天空盒子
+            var hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("../images/environment.dds", scene);
+            var currentSkybox = scene.createDefaultSkybox(hdrTexture, true);
+
+            //地面
+            var ground = BABYLON.MeshBuilder.CreateGround('ground1', {width: 600, height: 400, subdivsions: 4}, scene);
+
+            // 创建一个球题 支持六个配置项 名称, 分割段数, 直径, 放置的场景, updatable, sideOrientation
+            var sphere = BABYLON.MeshBuilder.CreateSphere('sphere1', {diameter: 1}, scene);
+
+            //球体自发光
+            var hl = new BABYLON.HighlightLayer("hl1", scene);
+            hl.addMesh(sphere, BABYLON.Color3.Green());
+
+            // 向场景添加一个gltf模型
+            BABYLON.SceneLoader.ImportMesh("", "../models/redAlert/jp/", "jp.gltf", scene, function (mesh) {
+
+                // 默认相机位置处于背面，相机水平绕焦点旋转180度转到正面
+                camera.target = mesh[0];
+
+                //todo:显示包围盒
+                /*console.log(mesh[0]._children[0]);
+                console.log(mesh[0]._children[0].getBoundingInfo());
+                console.log(mesh[0]._children[1].getBoundingInfo());
+
+                mesh[0]._children[0].showBoundingBox = true;
+                mesh[0]._children[1].showBoundingBox = true;*/
+
+                //todo：自发光代码
+                /*var gl = new BABYLON.GlowLayer("glow", scene, {
+                    mainTextureSamples: 4
+                });
+
+                mesh[0]._children[0].material.emissiveColor = BABYLON.Color3.Teal();
+
+                gl.addIncludedOnlyMesh(mesh[0]._children[1]);*/
+
+                //todo：实现随机巨炮设计位置，并绘制出巨炮的炮弹路线
+                let position = new BABYLON.Vector3(200*Math.random()-100, 4, 200*Math.random()-100);
+                let cubicBezierVectors = creatCurve(position);
+
+                mesh[0]._children[0].rotation.y = getAngle(position)/180*Math.PI;
+
+                let index = 0;
+                let boom = true;
+
+                //每一帧渲染前的运算
+                scene.registerBeforeRender(function () {
+                    index += 0.02;
+                    if (index >= 1){
+                        if(boom){
+                            boom = false;
+                            Explode(position);
+                            sphere.position = new BABYLON.Vector3(position.x, 0, position.z);
+                        }
+                        return;
+                    }
+                    sphere.position = getPosition(cubicBezierVectors, index);
+
+                });
+            });
+
+            // 添加轴向辅助线
+            var showAxis = function (size) {
+                var makeTextPlane = function (text, color, size) {
+                    var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+                    dynamicTexture.hasAlpha = true;
+                    dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+                    var plane = new BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
+                    plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+                    plane.material.backFaceCulling = false;
+                    plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+                    plane.material.diffuseTexture = dynamicTexture;
+                    return plane;
+                };
+
+                var axisX = BABYLON.Mesh.CreateLines("axisX", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
+                    new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
+                ], scene);
+                axisX.color = new BABYLON.Color3(1, 0, 0);
+                var xChar = makeTextPlane("X", "red", size / 10);
+                xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
+                var axisY = BABYLON.Mesh.CreateLines("axisY", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(-0.05 * size, size * 0.95, 0),
+                    new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(0.05 * size, size * 0.95, 0)
+                ], scene);
+                axisY.color = new BABYLON.Color3(0, 1, 0);
+                var yChar = makeTextPlane("Y", "green", size / 10);
+                yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
+                var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, -0.05 * size, size * 0.95),
+                    new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, 0.05 * size, size * 0.95)
+                ], scene);
+                axisZ.color = new BABYLON.Color3(0, 0, 1);
+                var zChar = makeTextPlane("Z", "blue", size / 10);
+                zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
+            };
+
+            showAxis(10);
+
+            // 返回场景
+            return scene;
+        };
+
+        //粒子爆炸效果
+        function Explode(impact) {
+            // 创建粒子系统
+            var fireBlast = BABYLON.ParticleHelper.CreateDefault(impact, 100);
+
+            // 粒子发射器
+            var fireBlastHemisphere = fireBlast.createHemisphericEmitter(.2, 0);
+
+            // 粒子发射率 /s
+            fireBlast.emitRate = 5000;
+
+            // 粒子尺寸范围
+            fireBlast.minSize = 6;
+            fireBlast.maxSize = 12;
+
+            // 粒子存活时间
+            fireBlast.minLifeTime = 1;
+            fireBlast.maxLifeTime = 3;
+
+            // 发射速度
+            fireBlast.minEmitPower = 30;
+            fireBlast.maxEmitPower = 60;
+
+            // 限制最大速度
+            fireBlast.addLimitVelocityGradient(0, 40);
+            fireBlast.addLimitVelocityGradient(0.120, 12.983);
+            fireBlast.addLimitVelocityGradient(0.445, 1.780);
+            fireBlast.addLimitVelocityGradient(0.691, 0.502);
+            fireBlast.addLimitVelocityGradient(0.930, 0.05);
+            fireBlast.addLimitVelocityGradient(1.0, 0);
+
+            fireBlast.limitVelocityDamping = 0.9;
+
+            // 初始旋转角度
+            fireBlast.minInitialRotation = -Math.PI / 2;
+            fireBlast.maxInitialRotation = Math.PI / 2;
+
+            // 粒子纹理
+            fireBlast.particleTexture = new BABYLON.Texture("../images/ExplosionSim_Sample.png", scene);
+            fireBlast.blendMode = BABYLON.ParticleSystem.BLENDMODE_MULTIPLYADD;
+
+            // 整个粒子系统的生命周期的颜色变化
+            fireBlast.addColorGradient(0.0, new BABYLON.Color4(1, 1, 1, 0));
+            fireBlast.addColorGradient(0.1, new BABYLON.Color4(1, 1, 1, 1));
+            fireBlast.addColorGradient(0.9, new BABYLON.Color4(1, 1, 1, 1));
+            fireBlast.addColorGradient(1.0, new BABYLON.Color4(1, 1, 1, 0));
+
+            // 定义需要应用的颜色渐变
+            fireBlast.addRampGradient(0.0, new BABYLON.Color3(1, 1, 1));
+            fireBlast.addRampGradient(0.09, new BABYLON.Color3(209 / 255, 204 / 255, 15 / 255));
+            fireBlast.addRampGradient(0.18, new BABYLON.Color3(221 / 255, 120 / 255, 14 / 255));
+            fireBlast.addRampGradient(0.28, new BABYLON.Color3(200 / 255, 43 / 255, 18 / 255));
+            fireBlast.addRampGradient(0.47, new BABYLON.Color3(115 / 255, 22 / 255, 15 / 255));
+            fireBlast.addRampGradient(0.88, new BABYLON.Color3(14 / 255, 14 / 255, 14 / 255));
+            fireBlast.addRampGradient(1.0, new BABYLON.Color3(14 / 255, 14 / 255, 14 / 255));
+            fireBlast.useRampGradients = true; //开启根据透明度索引修改颜色
+
+            // 设置颜色渐变应用的时间
+            fireBlast.addColorRemapGradient(0, 0, 0.1);
+            fireBlast.addColorRemapGradient(0.2, 0.1, 0.8);
+            fireBlast.addColorRemapGradient(0.3, 0.2, 0.85);
+            fireBlast.addColorRemapGradient(0.35, 0.4, 0.85);
+            fireBlast.addColorRemapGradient(0.4, 0.5, 0.9);
+            fireBlast.addColorRemapGradient(0.5, 0.95, 1.0);
+            fireBlast.addColorRemapGradient(1.0, 0.95, 1.0);
+
+            // 启动粒子系统，设置粒子系统的运行时间
+            fireBlast.start(30);
+            fireBlast.targetStopDuration = .4;
+
+            // 动画运行速度，一秒60帧
+            fireBlast.updateSpeed = 1 / 60;
+
+            // 渲染顺序
+            fireBlast.renderingGroupId = 1;
+        }
+
+        //获取曲线的某个位置的点的坐标
+        function getPosition(cubicBezierVectors, lerp) {
+            let lenList = []; //存储每两个点距离的数组
+            let array = cubicBezierVectors.getPoints();
+
+            //首先获取到总长度
+            for (let i = 1; i < array.length; i++) {
+                lenList.push(BABYLON.Vector3.Distance(array[i - 1], array[i]));
+            }
+
+            let distance = cubicBezierVectors.length();
+
+            //计算当前重点落在了哪个值上面
+            let index = getCenterIndex(0, lerp * distance);
+
+            //todo:求出下标
+            return BABYLON.Vector3.Lerp(array[index.index], array[index.index + 1], index.step);
+
+            //获取中心下标的方法
+            function getCenterIndex(index, distance) {
+                //如果减去当前值小于等于零，证明在当前下标内
+                if (distance - lenList[index] <= 0) {
+                    return {
+                        index: index,
+                        step: distance / lenList[index]
+                    };
+                } else {
+                    return getCenterIndex(index + 1, distance - lenList[index]);
+                }
+            }
+        }
+
+        //通过某个位置生成曲线
+        function creatCurve(vector) {
+            //根据起点和终点获取到贝塞尔曲线变换的另外两个值
+            let end = new BABYLON.Vector2(vector.x, vector.z);
+
+            let bezierA = new BABYLON.Vector3(vector.x/2, vector.y, vector.z/2); //离起点较劲的那个点
+            let bezierB = new BABYLON.Vector3(vector.x*.8, vector.y, vector.z*.8); //离终点较劲的那个点
+
+            var cubicBezierVectors = BABYLON.Curve3.CreateCubicBezier(
+                new BABYLON.Vector3(0, vector.y, 0),
+                bezierA,
+                bezierB,
+                new BABYLON.Vector3(vector.x, 0, vector.z),
+                60);
+
+            var cubicBezierCurve = BABYLON.Mesh.CreateLines("cbezier", cubicBezierVectors.getPoints(), scene);
+            cubicBezierCurve.color = new BABYLON.Color3(1, 1, 0);
+
+            return cubicBezierVectors;
+        }
+
+        //获得当前二维向量对于x轴的偏移
+        function getAngle(vector3) {
+            var angle = Math.atan2(vector3.z, vector3.x);
+
+            if (angle < 0) angle += 2 * Math.PI;
+
+            return angle / Math.PI * 180 - 90;
+        }
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大每秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>
