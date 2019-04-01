@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>在曲线位置 进行移动</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            // 创建场景对象
+            var scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color3(.5, .5, .5);
+
+            // 相机
+            var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 0, new BABYLON.Vector3(0, 0, -0), scene);
+            camera.setPosition(new BABYLON.Vector3(-10, -10, -100));
+            camera.attachControl(canvas, true);
+
+            // 创建一个球题 支持六个配置项 名称, 分割段数, 直径, 放置的场景, updatable, sideOrientation
+            var sphere = BABYLON.MeshBuilder.CreateSphere('sphere1', {diameter: 1}, scene);
+
+
+            // CURVE3 : Bezier Cubic Curve
+
+            var cubicBezierVectors = BABYLON.Curve3.CreateCubicBezier(
+                new BABYLON.Vector3(-50, 30, 0),
+                new BABYLON.Vector3(0, 30, 0),
+                new BABYLON.Vector3(30, 30, 0),
+                new BABYLON.Vector3(50, 0, 0),
+                60);
+
+            var cubicBezierCurve = BABYLON.Mesh.CreateLines("cbezier", cubicBezierVectors.getPoints(), scene);
+            cubicBezierCurve.color = new BABYLON.Color3(1, 0.6, 0);
+
+            let index  = 0;
+
+            //每一帧渲染前的运算
+            scene.registerBeforeRender(function () {
+                index += 0.005;
+                if(index >= 1) return;
+                sphere.position = getCenter(cubicBezierVectors, index);
+            });
+
+            /***************************************坐标轴*************************************************/
+
+            // 显示坐标轴
+            var showAxis = function (size) {
+                    var makeTextPlane = function (text, color, size) {
+                        var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+                        dynamicTexture.hasAlpha = true;
+                        dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+                        var plane = BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
+                        plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+                        plane.material.backFaceCulling = false;
+                        plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+                        plane.material.diffuseTexture = dynamicTexture;
+                        return plane;
+                    };
+                    var axisX = BABYLON.Mesh.CreateLines("axisX", [
+                        BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
+                        new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
+                    ], scene);
+                    axisX.color = new BABYLON.Color3(1, 0, 0);
+                    var xChar = makeTextPlane("X", "red", size / 10);
+                    xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
+                    var axisY = BABYLON.Mesh.CreateLines("axisY", [
+                        BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(-0.05 * size, size * 0.95, 0),
+                        new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(0.05 * size, size * 0.95, 0)
+                    ], scene);
+                    axisY.color = new BABYLON.Color3(0, 1, 0);
+                    var yChar = makeTextPlane("Y", "green", size / 10);
+                    yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
+                    var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
+                        BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, -0.05 * size, size * 0.95),
+                        new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, 0.05 * size, size * 0.95)
+                    ], scene);
+                    axisZ.color = new BABYLON.Color3(0, 0, 1);
+                    var zChar = makeTextPlane("Z", "blue", size / 10);
+                    zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
+                };
+
+            showAxis(30);
+
+            return scene;
+        };
+
+        //获取曲线的某个位置的点的坐标
+        function getCenter(cubicBezierVectors, lerp) {
+            let lenList = []; //存储每两个点距离的数组
+            let array = cubicBezierVectors.getPoints();
+
+            //首先获取到总长度
+            for (let i = 1; i < array.length; i++) {
+                lenList.push(BABYLON.Vector3.Distance(array[i - 1], array[i]));
+            }
+
+            let distance = cubicBezierVectors.length();
+
+            console.log(0, lerp*distance);
+
+            //计算当前重点落在了哪个值上面
+            let index = getCenterIndex(0, lerp*distance);
+
+            //todo:求出下标
+            return BABYLON.Vector3.Lerp(array[index.index], array[index.index + 1], index.step);
+
+            //获取中心下标的方法
+            function getCenterIndex(index, distance) {
+                //如果减去当前值小于等于零，证明在当前下标内
+                if (distance - lenList[index] <= 0) {
+                    return {
+                        index: index,
+                        step: distance / lenList[index]
+                    };
+                }
+                else {
+                    return getCenterIndex(index + 1, distance - lenList[index]);
+                }
+            }
+        }
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>
