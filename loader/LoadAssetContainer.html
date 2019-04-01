@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>LoadAssetContainer方式导入案例</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom3-3.js"></script>
+<script src="../js/babylonjs.loaders.min.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        var main = async function (scene, camera) {
+            // 创建一组对象
+            var scenes = [
+                {
+                    root: "../models/redAlert/jp/",
+                    file: "jp.gltf"
+                },
+                {
+                    root: "../models/redAlert/sgjqp/",
+                    file: "sgjqp.gltf"
+                },
+                {
+                    root: "../models/redAlert/glt/",
+                    file: "glt.gltf"
+                },
+                {
+                    root: "../models/redAlert/yt/",
+                    file: "yt.gltf"
+                }
+            ];
+
+            var loadPromise = async (root, file, scene) => {
+                return new Promise((res, rej) => {
+                    BABYLON.SceneLoader.LoadAssetContainer(root, file, scene, function (container) {
+                        res(container)
+                    });
+                })
+            };
+
+            // 生成多个模型场景，并显示第一个
+            var assetContainers = [];
+            var currentSceneIndex = 0;
+            for (var i = 0; i < scenes.length; i++) {
+                var assets = await loadPromise(scenes[i].root, scenes[i].file, scene);
+                assetContainers.push(assets);
+            }
+
+            console.log(assetContainers);
+
+
+            //将第一个模型在场景中显示
+            assetContainers[currentSceneIndex].addAllToScene();
+
+            camera.target = assetContainers[currentSceneIndex].meshes[0];
+
+            // 通过空格键切换模型
+            document.onkeydown = (e) => {
+
+                //按下空格切换模型
+                if (e.key != " ") {
+                    return;
+                }
+
+                //将当前的模型从场景中删除掉
+                assetContainers[currentSceneIndex].removeAllFromScene();
+
+                //下标加1
+                currentSceneIndex = (++currentSceneIndex) % assetContainers.length;
+
+                //将下一个模型添加到场景中
+                assetContainers[currentSceneIndex].addAllToScene();
+
+                //将相机视角切换到当前模型
+                camera.target = assetContainers[currentSceneIndex].meshes[0];
+            }
+
+            /*scene.registerBeforeRender(function () {
+                assetContainers[1].meshes[0].addRotation(0, 0.001, 0);
+            });*/
+        };
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+
+            // 场景对象
+            var scene = new BABYLON.Scene(engine);
+
+            // 相机
+            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 1.25, 50, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+
+            // 光
+            var directionalLight = new BABYLON.DirectionalLight("directional", new BABYLON.Vector3(-50, -20.0, -20.0), scene);
+
+            //加载模型函数，使用到async函数，当前函数内部会等待await 后面的异步函数加载完成再往下运行
+            main(scene, camera);
+
+            // 添加轴向辅助线
+            var showAxis = function (size) {
+                var makeTextPlane = function (text, color, size) {
+                    var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+                    dynamicTexture.hasAlpha = true;
+                    dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+                    var plane = new BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
+                    plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+                    plane.material.backFaceCulling = false;
+                    plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+                    plane.material.diffuseTexture = dynamicTexture;
+                    return plane;
+                };
+
+                var axisX = BABYLON.Mesh.CreateLines("axisX", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
+                    new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
+                ], scene);
+                axisX.color = new BABYLON.Color3(1, 0, 0);
+                var xChar = makeTextPlane("X", "red", size / 10);
+                xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
+                var axisY = BABYLON.Mesh.CreateLines("axisY", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(-0.05 * size, size * 0.95, 0),
+                    new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(0.05 * size, size * 0.95, 0)
+                ], scene);
+                axisY.color = new BABYLON.Color3(0, 1, 0);
+                var yChar = makeTextPlane("Y", "green", size / 10);
+                yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
+                var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, -0.05 * size, size * 0.95),
+                    new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, 0.05 * size, size * 0.95)
+                ], scene);
+                axisZ.color = new BABYLON.Color3(0, 0, 1);
+                var zChar = makeTextPlane("Z", "blue", size / 10);
+                zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
+            };
+
+            showAxis(10);
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大每秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

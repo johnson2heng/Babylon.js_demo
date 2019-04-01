@@ -66,13 +66,13 @@
         // 创建场景并返回场景对象
         var createScene = function () {
 
-            engine.enableOfflineSupport = false;
-
             // 这里非常重要，用来设置 Babylon.js 使用 decomposeLerp and matrix interpolation 进行动画之间的矩阵插值
             BABYLON.Animation.AllowMatricesInterpolation = true;
 
+            //场景
             var scene = new BABYLON.Scene(engine);
 
+            //相机
             var camera = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 3, new BABYLON.Vector3(0, 1, 0), scene);
             camera.attachControl(canvas, true);
 
@@ -80,6 +80,7 @@
             camera.upperRadiusLimit = 10;
             camera.wheelDeltaPercentage = 0.01;
 
+            //两个光源
             var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
             light.intensity = 0.6;
             light.specular = BABYLON.Color3.Black();
@@ -87,7 +88,7 @@
             var light2 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -0.5, -1.0), scene);
             light2.position = new BABYLON.Vector3(0, 5, 5);
 
-            // Shadows
+            // 阴影
             var shadowGenerator = new BABYLON.ShadowGenerator(1024, light2);
             shadowGenerator.useBlurExponentialShadowMap = true;
             shadowGenerator.blurKernel = 32;
@@ -102,11 +103,12 @@
                     newMeshes[index].receiveShadows = false;
                 }
 
-                var helper = scene.createDefaultEnvironment({
+                //创建默认环境
+                /*var helper = scene.createDefaultEnvironment({
                     enableGroundShadow: true
                 });
                 helper.setMainColor(BABYLON.Color3.Gray());
-                helper.ground.position.y += 0.01;
+                helper.ground.position.y += 0.01;*/
 
                 // ROBOT
                 skeleton.animationPropertiesOverride = new BABYLON.AnimationPropertiesOverride();
