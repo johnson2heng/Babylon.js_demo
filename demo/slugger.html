@@ -63,10 +63,6 @@
 
             // 向场景添加一个gltf模型
             BABYLON.SceneLoader.ImportMesh("", "../models/redAlert/jp/", "jp.gltf", scene, function (mesh) {
-
-                // 默认相机位置处于背面，相机水平绕焦点旋转180度转到正面
-                camera.target = mesh[0];
-
                 //todo:显示包围盒
                 /*console.log(mesh[0]._children[0]);
                 console.log(mesh[0]._children[0].getBoundingInfo());
@@ -85,27 +81,56 @@
                 gl.addIncludedOnlyMesh(mesh[0]._children[1]);*/
 
                 //todo：实现随机巨炮设计位置，并绘制出巨炮的炮弹路线
-                let position = new BABYLON.Vector3(200*Math.random()-100, 4, 200*Math.random()-100);
-                let cubicBezierVectors = creatCurve(position);
+                let position, index, boom, cubicBezierVectors, cubicBezierCurve, shot = true;
 
-                mesh[0]._children[0].rotation.y = getAngle(position)/180*Math.PI;
+                reset();
 
-                let index = 0;
-                let boom = true;
+                //设置定时器实现重新渲染
+                setInterval(reset, 5000);
+
+                function reset() {
+                    if (!shot) return;
+                    shot = false;
+                    position = new BABYLON.Vector3(200 * Math.random() - 100, 4, 200 * Math.random() - 100);
+                    index = 0;
+                    boom = true;
+
+                    //生成曲线顶点数组
+                    cubicBezierVectors = creatCurve(position);
+
+                    if (!cubicBezierCurve) {
+                        cubicBezierCurve = BABYLON.MeshBuilder.CreateLines("cbezier", {
+                            points: cubicBezierVectors.getPoints(),
+                            updatable: true
+                        }, scene);
+                        //生成的曲线对象
+                        cubicBezierCurve.color = new BABYLON.Color3(1, 1, 0);
+                    } else {
+                        BABYLON.MeshBuilder.CreateLines("cbezier", {
+                            points: cubicBezierVectors.getPoints(),
+                            instance: cubicBezierCurve
+                        });
+                    }
+
+                    //设置巨炮的转向
+                    mesh[0]._children[0].rotationQuaternion = null; //保证转向正确，每次旋转后将四元数设置为null
+                    mesh[0]._children[0].rotation.y = getAngle(position) / 180 * Math.PI;
+                }
 
                 //每一帧渲染前的运算
                 scene.registerBeforeRender(function () {
-                    index += 0.02;
-                    if (index >= 1){
-                        if(boom){
+                    index += .5;
+                    if (index >= cubicBezierVectors.length()) {
+                        //判断当前是否可以实现爆炸效果
+                        if (boom) {
                             boom = false;
+                            shot = true;
                             Explode(position);
                             sphere.position = new BABYLON.Vector3(position.x, 0, position.z);
                         }
                         return;
                     }
-                    sphere.position = getPosition(cubicBezierVectors, index);
-
+                    sphere.position = getPosition(cubicBezierVectors, index / cubicBezierVectors.length());
                 });
             });
 
@@ -266,8 +291,8 @@
             //根据起点和终点获取到贝塞尔曲线变换的另外两个值
             let end = new BABYLON.Vector2(vector.x, vector.z);
 
-            let bezierA = new BABYLON.Vector3(vector.x/2, vector.y, vector.z/2); //离起点较劲的那个点
-            let bezierB = new BABYLON.Vector3(vector.x*.8, vector.y, vector.z*.8); //离终点较劲的那个点
+            let bezierA = new BABYLON.Vector3(vector.x / 2, vector.y, vector.z / 2); //离起点较劲的那个点
+            let bezierB = new BABYLON.Vector3(vector.x * .8, vector.y, vector.z * .8); //离终点较劲的那个点
 
             var cubicBezierVectors = BABYLON.Curve3.CreateCubicBezier(
                 new BABYLON.Vector3(0, vector.y, 0),
@@ -275,9 +300,6 @@
                 bezierB,
                 new BABYLON.Vector3(vector.x, 0, vector.z),
                 60);
-
-            var cubicBezierCurve = BABYLON.Mesh.CreateLines("cbezier", cubicBezierVectors.getPoints(), scene);
-            cubicBezierCurve.color = new BABYLON.Color3(1, 1, 0);
 
             return cubicBezierVectors;
         }
