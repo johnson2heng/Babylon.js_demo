@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>弧形旋转相机ArcRotateCamera案例</title>
+    <title>FreeCamera案例</title>
     <style>
         html, body {
             overflow: hidden;
@@ -38,42 +38,22 @@
             // 创建场景对象
             var scene = new BABYLON.Scene(engine);
 
-            // 创建相机的配置项：name, alpha, beta, radius, target position, scene
-            var camera = new BABYLON.ArcRotateCamera("Camera", 0, 0, 10, new BABYLON.Vector3(0, 0, 0), scene);
+            // 创建一个自由相机并设置它的位置
+            var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -20), scene);
 
-            // 通过设置相机位置来覆盖 alpha, beta, radius
-            camera.setPosition(new BABYLON.Vector3(0, 0, -20));
+            // 设置相机焦点
+            camera.setTarget(BABYLON.Vector3.Zero());
 
-            //设置相机距离焦点的距离范围
-            camera.lowerRadiusLimit = 6;
-            camera.upperRadiusLimit = 200;
-
-            //开启达到极限时触发回弹效果
-            camera.useBouncingBehavior = true;
-
-            //通过相机的bouncingBehavior设置回弹效果细节
-            camera.bouncingBehavior.transitionDuration = 450; //回弹效果的过渡时间
-            camera.bouncingBehavior.lowerRadiusTransitionRange = .5; //到达最近距离时回弹的幅度距离，默认值为2
-            camera.bouncingBehavior.upperRadiusTransitionRange = -20; //达到最远距离时的回弹幅度距离，默认值为-2
-            camera.bouncingBehavior.autoTransitionRange = true; //是否开启自动定义lowerRadiusTransitionRange和upperRadiusTransitionRange值，默认值为false。过渡范围设置为世界空间中对角线框的5%
-
-            //开启自动旋转效果
-            camera.useAutoRotationBehavior = true;
-
-            //设置自动旋转细节
-            camera.autoRotationBehavior.idleRotationSpeed = 1; //自动旋转速度
-            camera.autoRotationBehavior.idleRotationWaitTime = 1000; //用户交互后多少时间开启自动旋转（毫秒）
-            camera.autoRotationBehavior.idleRotationSpinupTime = 1000; //从开始自动旋转到设置的旋转速度所需要的时间（毫秒）
-            camera.autoRotationBehavior.zoomStopsAnimation = true; //设置缩放是否会停止自动旋转
-
-            //自动定位功能
-            camera.useFramingBehavior = true;
-
-            //调整自动定位功能细节
-
-
-            // 将相机绑定到画布上面
+            // 相机事件绑定到画布上面
             camera.attachControl(canvas, true);
+
+            //增加wsad - 自由相机位移的四个按键
+            camera.inputs.attached.keyboard.keysUp.push(87);
+            camera.inputs.attached.keyboard.keysDown.push(83);
+            camera.inputs.attached.keyboard.keysLeft.push(65);
+            camera.inputs.attached.keyboard.keysRight.push(68);
+
+            console.log(camera.inputs);
 
             // 创建一个平衡光，将灯光位置设置到0 1 0
             var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0, 1, 0), scene);

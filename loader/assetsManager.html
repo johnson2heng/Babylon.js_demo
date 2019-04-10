@@ -55,21 +55,40 @@
             var assetsManager = new BABYLON.AssetsManager(scene);
 
             //加载巨炮
-            var meshTask = assetsManager.addMeshTask("slugger", "", "../models/redAlert/jp/", "jp.gltf");
+            var meshTask = assetsManager.addMeshTask("slugger", "", "../models/babylon/redAlert/jp/", "jp.babylon");
             meshTask.onSuccess = function (task) {
                 task.loadedMeshes[0].position = new BABYLON.Vector3(20, 0, 0);
             };
 
             //加载光棱塔
-            var gltTask = assetsManager.addMeshTask("slugger", "", "../models/redAlert/glt/", "glt.gltf");
+            var gltTask = assetsManager.addMeshTask("glt", "", "../models/babylon/redAlert/glt/", "glt.babylon");
             gltTask.onSuccess = function (task) {
                 task.loadedMeshes[0].position = new BABYLON.Vector3(-20, 0, 0);
             };
 
             //加载四管机枪炮
-            var sgjqpTask = assetsManager.addMeshTask("slugger", "", "../models/redAlert/sgjqp/", "sgjqp.gltf");
+            var sgjqpTask = assetsManager.addMeshTask("sgjqp", "", "../models/babylon/redAlert/sgjqp/", "sgjqp.babylon");
             sgjqpTask.onSuccess = function (task) {
                 task.loadedMeshes[0].position = new BABYLON.Vector3(0, 0, 0);
+            };
+
+            //加载僵尸
+            var sgjqpTask = assetsManager.addMeshTask("bobby", "", "../models/babylon/zombie/bobby/", "bobby.babylon");
+            sgjqpTask.onSuccess = function (task) {
+                task.loadedMeshes[0].scaling = new BABYLON.Vector3(.1, .1, .1);
+                task.loadedMeshes[0].position = new BABYLON.Vector3(0, 0, 20);
+            };
+
+            var sgjqpTask = assetsManager.addMeshTask("parent", "", "../models/babylon/zombie/parent/", "parent.babylon");
+            sgjqpTask.onSuccess = function (task) {
+                task.loadedMeshes[0].scaling = new BABYLON.Vector3(.1, .1, .1);
+                task.loadedMeshes[0].position = new BABYLON.Vector3(-20, 0, 20);
+            };
+
+            var sgjqpTask = assetsManager.addMeshTask("women", "", "../models/babylon/zombie/women/", "women.babylon");
+            sgjqpTask.onSuccess = function (task) {
+                task.loadedMeshes[0].scaling = new BABYLON.Vector3(.1, .1, .1);
+                task.loadedMeshes[0].position = new BABYLON.Vector3(20, 0, 20);
             };
 
             assetsManager.load();
