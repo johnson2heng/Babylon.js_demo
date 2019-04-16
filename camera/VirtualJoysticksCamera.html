@@ -18,36 +18,44 @@
             width: 100%;
             height: 100%;
             touch-action: none;
+            display: block;
         }
     </style>
 </head>
 <body>
 <canvas id="renderCanvas"></canvas>
 </body>
+<script src="../js/pep.min.js"></script>
 <script src="../js/babylon.custom.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", startGame, false);
+
     function startGame() {
         if (BABYLON.Engine.isSupported()) {
             var canvas = document.getElementById("renderCanvas");
             var engine = new BABYLON.Engine(canvas, true);
 
-            BABYLON.SceneLoader.Load("Espilit/", "Espilit.babylon", engine, function (newScene) {
+            BABYLON.SceneLoader.Load("../Babylon第一人称案例/Espilit/", "Espilit.binary.babylon", engine, function (newScene) {
 
+                //创建虚拟操纵杆相机
                 var VJC = new BABYLON.VirtualJoysticksCamera("VJC", newScene.activeCamera.position, newScene);
                 VJC.rotation = newScene.activeCamera.rotation;
                 VJC.checkCollisions = newScene.activeCamera.checkCollisions;
                 VJC.applyGravity = newScene.activeCamera.applyGravity;
 
-                // Wait for textures and shaders to be ready
+                // 等待纹理和着色器处理加载完成
                 newScene.executeWhenReady(function () {
                     newScene.activeCamera = VJC;
-                    // Attach camera to canvas inputs
+                    // 将事件绑定到相机上
                     newScene.activeCamera.attachControl(canvas);
-                    // Once the scene is loaded, just register a render loop to render it
+                    // 循环渲染
                     engine.runRenderLoop(function () {
                         newScene.render();
-                    })
+                    });
+                    // 浏览器大小变动时，触发引擎的重载状态
+                    window.addEventListener('resize', function () {
+                        engine.resize();
+                    });
                 })
             }, function (progress) {
                 // To do: give progress feedback to user.

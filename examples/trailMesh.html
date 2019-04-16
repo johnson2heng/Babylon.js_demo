@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>体积光示例</title>
+    <title>创建TrailMesh</title>
     <style>
         html, body {
             overflow: hidden;
@@ -24,7 +24,8 @@
 <body>
 <canvas id="renderCanvas"></canvas>
 </body>
-<script src="../js/babylon.custom.js"></script>
+<script src="https://preview.babylonjs.com/babylon.js"></script>
+
 <script>
     window.addEventListener('DOMContentLoaded', function () {
         // 获取到canvas的dom对象
@@ -35,38 +36,44 @@
 
         // 创建场景并返回场景对象
         var createScene = function () {
-
-            // 场景对象
             var scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color3(.5, .5, .5);
 
-            // 添加点光源
-            var light = new BABYLON.PointLight("Omni", new BABYLON.Vector3(20, 20, 100), scene);
+            // camera
+            var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 0, new BABYLON.Vector3(0, 0, -0), scene); //创建一个围绕原点中心旋转并始终只想原点的相机
+            camera.setPosition(new BABYLON.Vector3(0, 5, -20));// 设置相机位置
+            camera.attachControl(canvas, true);// 相机事件绑定到canvas对象上面
 
-            // 添加弧形
-            var camera = new BABYLON.ArcRotateCamera("Camera", -0.5, 2.2, 100, BABYLON.Vector3.Zero(), scene);
-            camera.attachControl(canvas, false);
+            //创建一个场景的平衡光
+            var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.7;
 
-            // 加载模型
-            BABYLON.SceneLoader.ImportMesh("", "../models/", "skull.babylon", scene, function (newMeshes) {
-                // 设置相机焦点为模型焦点
-                camera.target = newMeshes[0];
+            var alpha = Math.PI;
+// Create a mesh for the trail to follow.
+            var cube = BABYLON.MeshBuilder.CreateBox('cube', {  }, scene);
+            cube.scaling.y = 2;
+            cube.bakeCurrentTransformIntoVertices();
+            cube.position.x = Math.sin(alpha)*10;
+            cube.position.z = Math.cos(alpha)*10;
+            cube.computeWorldMatrix(true);
 
-                newMeshes[0].material = new BABYLON.StandardMaterial("skull", scene);
-                newMeshes[0].material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-            });
+            var trail = new BABYLON.TrailMesh('new', cube, scene, .5, 60, true);
 
-            // 创建体积光
-            var godrays = new BABYLON.VolumetricLightScatteringPostProcess('godrays', 1.0, camera, null, 100, BABYLON.Texture.BILINEAR_SAMPLINGMODE, engine, false);
+            var sourceMat = new BABYLON.StandardMaterial('sourceMat', scene);
+            sourceMat.emissiveColor =
+                sourceMat.diffuseColor = new BABYLON.Color3.Red();
+            sourceMat.specularColor = new BABYLON.Color3.Black();
 
-            // 默认情况体积光使用广告牌类型 渲染太阳，所以只需要设置贴图即可
-            godrays.mesh.material.diffuseTexture = new BABYLON.Texture('../images/sun.png', scene, true, false, BABYLON.Texture.BILINEAR_SAMPLINGMODE);
-            //godrays.mesh.material.diffuseTexture.hasAlpha = true;
-            godrays.mesh.material.opacityTexture = new BABYLON.Texture("../images/sparks.png", scene);
-            // 位置和缩放
-            godrays.mesh.position = new BABYLON.Vector3(-150, 150, 150);
-            godrays.mesh.scaling = new BABYLON.Vector3(350, 350, 350);
+            trail.material = sourceMat;
 
-            light.position = godrays.mesh.position;
+            observer = scene.onBeforeRenderObservable.add(animate);
+            function animate() {
+                alpha += Math.PI/120;
+                cube.position.x = Math.sin(alpha)*10;
+                cube.position.z = Math.cos(alpha)*10;
+                cube.rotation.x = Math.PI*alpha/2;
+                cube.rotation.y = alpha;
+            }
 
             // 添加轴向辅助线
             var showAxis = function (size) {
@@ -105,9 +112,8 @@
                 zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
             };
 
-            showAxis(10);
+            showAxis(15);
 
-            // 返回场景
             return scene;
         };
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>体积光示例</title>
+    <title>虚拟操纵杆相机</title>
     <style>
         html, body {
             overflow: hidden;
@@ -35,38 +35,60 @@
 
         // 创建场景并返回场景对象
         var createScene = function () {
-
-            // 场景对象
+            // 创建场景对象
             var scene = new BABYLON.Scene(engine);
+            var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+            camera.setTarget(BABYLON.Vector3.Zero());
+            var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
 
-            // 添加点光源
-            var light = new BABYLON.PointLight("Omni", new BABYLON.Vector3(20, 20, 100), scene);
+            // 创建一个修改位置的球体
+            var sphere = BABYLON.Mesh.CreateSphere("sphere1", 16, 2, scene);
+            sphere.position.y = 1;
 
-            // 添加弧形
-            var camera = new BABYLON.ArcRotateCamera("Camera", -0.5, 2.2, 100, BABYLON.Vector3.Zero(), scene);
-            camera.attachControl(canvas, false);
+            // 创建虚拟操作杆，并将虚拟操作杆的显示层设置到上方
+            var leftJoystick = new BABYLON.VirtualJoystick(true);
+            var rightJoystick = new BABYLON.VirtualJoystick(false);
+            rightJoystick.setJoystickColor('yellow');
+            BABYLON.VirtualJoystick.Canvas.style.zIndex = "4";
 
-            // 加载模型
-            BABYLON.SceneLoader.ImportMesh("", "../models/", "skull.babylon", scene, function (newMeshes) {
-                // 设置相机焦点为模型焦点
-                camera.target = newMeshes[0];
-
-                newMeshes[0].material = new BABYLON.StandardMaterial("skull", scene);
-                newMeshes[0].material.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+            // Game/Render loop
+            var movespeed = 5; //设置当前速度
+            scene.onBeforeRenderObservable.add(function (){
+                //判断当前触发了哪个操作杆的拖拽，并获取到值设置到
+                if (leftJoystick.pressed) {
+                    moveX = leftJoystick.deltaPosition.x * (engine.getDeltaTime() / 1000) * movespeed;
+                    moveZ = leftJoystick.deltaPosition.y * (engine.getDeltaTime() / 1000) * movespeed;
+                    sphere.position.x += moveX;
+                    sphere.position.z += moveZ;
+                }
+                if (rightJoystick.pressed) {
+                    moveY = rightJoystick.deltaPosition.y * (engine.getDeltaTime() / 1000) * movespeed;
+                    sphere.position.y += moveY;
+                }
             });
 
-            // 创建体积光
-            var godrays = new BABYLON.VolumetricLightScatteringPostProcess('godrays', 1.0, camera, null, 100, BABYLON.Texture.BILINEAR_SAMPLINGMODE, engine, false);
+            // 创建切换虚拟操作杆的显示层级的按钮
+            var btn = document.createElement("button");
+            btn.innerText = "Enable/Disable Joystick";
+            btn.style.zIndex = 10;
+            btn.style.position = "absolute";
+            btn.style.bottom = "50px";
+            btn.style.right = "0px";
+            document.body.appendChild(btn);
 
-            // 默认情况体积光使用广告牌类型 渲染太阳，所以只需要设置贴图即可
-            godrays.mesh.material.diffuseTexture = new BABYLON.Texture('../images/sun.png', scene, true, false, BABYLON.Texture.BILINEAR_SAMPLINGMODE);
-            //godrays.mesh.material.diffuseTexture.hasAlpha = true;
-            godrays.mesh.material.opacityTexture = new BABYLON.Texture("../images/sparks.png", scene);
-            // 位置和缩放
-            godrays.mesh.position = new BABYLON.Vector3(-150, 150, 150);
-            godrays.mesh.scaling = new BABYLON.Vector3(350, 350, 350);
+            // 绑定按钮事件，切换操作
+            btn.onclick = function (){
+                if (BABYLON.VirtualJoystick.Canvas.style.zIndex == "-1") {
+                    BABYLON.VirtualJoystick.Canvas.style.zIndex = "4";
+                } else {
+                    BABYLON.VirtualJoystick.Canvas.style.zIndex = "-1";
+                }
+            };
 
-            light.position = godrays.mesh.position;
+            // 销毁场景时销删除按钮
+            scene.onDisposeObservable.add(function () {
+                document.body.removeChild(btn)
+            });
 
             // 添加轴向辅助线
             var showAxis = function (size) {
@@ -105,7 +127,7 @@
                 zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
             };
 
-            showAxis(10);
+            showAxis(15);
 
             // 返回场景
             return scene;

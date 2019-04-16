@@ -388,7 +388,8 @@ camerasList.addEventListener("change", function () {
 // Check support
 if (!BABYLON.Engine.isSupported()) {
     document.getElementById("notSupported").className = "";
-} else {
+}
+else {
     if (window.location.hostname.indexOf("localhost") === -1 && !demo.forceLocal) {
         if (demo.doNotUseCDN) {
             sceneLocation = "/Scenes/";
