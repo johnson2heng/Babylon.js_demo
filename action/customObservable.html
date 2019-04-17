@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>自定义uv映射</title>
+    <title>自定义Observable</title>
     <style>
         html, body {
             overflow: hidden;
@@ -35,51 +35,54 @@
 
         // 创建场景并返回场景对象
         var createScene = function () {
+
+            // 场景对象
             var scene = new BABYLON.Scene(engine);
-            scene.clearColor = new BABYLON.Color3(.5, .5, .5);
 
-            // camera
-            var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 0, new BABYLON.Vector3(0, 0, -0), scene); //创建一个围绕原点中心旋转并始终只想原点的相机
-            camera.setPosition(new BABYLON.Vector3(0, 5, -20));// 设置相机位置
-            camera.attachControl(canvas, true);// 相机事件绑定到canvas对象上面
+            //相机
+            var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+            camera.setTarget(BABYLON.Vector3.Zero());
+            camera.attachControl(canvas, true);
 
-            //创建一个场景的平衡光
+            //光
             var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
             light.intensity = 0.7;
 
-            //创建一个跟随相机位置的点光源
-            var pl = new BABYLON.PointLight("pl", BABYLON.Vector3.Zero(), scene);
-            pl.intensity = 0.5;
+            //主要球体
+            var master = BABYLON.MeshBuilder.CreateSphere("master", {}, scene);
 
-            var customMesh = new BABYLON.Mesh("custom", scene);
+            //实例化Observable
+            master.onXChange = new BABYLON.Observable();
 
-            var positions = [-5, 2, -3, -7, -2, -3, -3, -2, -3, 0, 2, -3, 0, -2, -3, 4, -2, -3, 0, 2, -3, 4, -2, -3, 4, 2, -3];  //顶点位置 三个点一个顶点坐标
-            var indices = [0, 1, 2, 3, 4, 5, 6, 7, 8]; //顶点下标 三个值代表一个面
-            var uvs = [0.5, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1]; //设置uv映射 每两个值代表一个顶点的定位位置 uv从左下角的0 0 到右上角的1 1
+            //每帧调用的函数
+            setX = function(value) {
+                if(value === master.position.x) {
+                    return value;
+                }
+                master.position.x = value;
+                master.onXChange.notifyObservers(master.position.x); //通知所有的观察事件
+            };
 
-            //创建一个空数组来通过位置点和下标创建向量值
-            var normals = [];
+            var minion0 = BABYLON.MeshBuilder.CreateSphere("minion0", {diameter: 0.5}, scene);
+            minion0.startPosition = new BABYLON.Vector3(2.5 - 5 * Math.random(), 2.5 - 5 * Math.random(), 5 + 5 * Math.random());
+            minion0.position = minion0.startPosition;
+            //添加Observer事件回调
+            master.onXChange.add(function(value) {
+                minion0.position.x = minion0.startPosition.x + value / 200;
+            });
 
-            //通过计算向向量数组添加数值
-            BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+            var minion1 = BABYLON.MeshBuilder.CreateSphere("minion1", {diameter: 0.5}, scene);
+            minion1.startPosition = new BABYLON.Vector3(2.5 - 5 * Math.random(), 2.5 - 5 * Math.random(), 5 + 5 * Math.random());
+            minion1.position = minion1.startPosition;
+            //添加Observer事件回调
+            master.onXChange.add(function(value) {
+                minion1.position.x = minion1.startPosition.x + value / 150;
+            });
 
-            var vertexData = new BABYLON.VertexData();
-
-            vertexData.positions = positions;
-            vertexData.indices = indices;
-            vertexData.normals = normals;
-            vertexData.uvs = uvs;
-
-            vertexData.applyToMesh(customMesh);
-
-            //设置纹理材质
-            var mat = new BABYLON.StandardMaterial("mat", scene);
-            mat.diffuseTexture = new BABYLON.Texture("http://i.imgur.com/JbvoYlB.png", scene);
-            customMesh.material = mat;
-
-            //registerBeforeRender 每次场景渲染前的回调，将点光源的位置设置在相机的位置上
-            scene.registerBeforeRender(function () {
-                pl.position = camera.position;
+            var angle = 0;
+            scene.registerBeforeRender(function(){
+                setX(5 * Math.sin(angle));
+                angle += 0.01;
             });
 
             // 添加轴向辅助线
@@ -119,8 +122,9 @@
                 zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
             };
 
-            showAxis(15);
+            showAxis(10);
 
+            // 返回场景
             return scene;
         };
 

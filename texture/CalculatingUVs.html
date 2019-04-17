@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>计算uv映射</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            var camera = new BABYLON.ArcRotateCamera("Camera", 3 * Math.PI / 2, Math.PI / 4, 8, BABYLON.Vector3.Zero(), scene);
+
+            camera.attachControl(canvas, true);
+
+            var light = new BABYLON.HemisphericLight("hemi", new BABYLON.Vector3(1, 1, 0), scene);
+            light.intesity = 0.5;
+
+            //每个点的数据信息
+            var positions = [
+                -4, 0, 4,
+                4, 0, 4,
+                4, 0, -4,
+                -4, 0, -4,
+                -3, 0, 1,
+                -1, 0, 1,
+                -1, 0, -1,
+                -3, 0, -1,
+                -2.5, 1, 0.5,
+                -1.5, 1, 0.5,
+                -1.5, 1, -0.5,
+                -2.5, 1, -0.5,
+                1, 0, 1,
+                3, 0, 1,
+                3, 0, -1,
+                1, 0, -1,
+                2, 1.5, 0,
+                -3, 0, 4,
+                -1, 0, 4,
+                1, 0, 4,
+                3, 0, 4,
+                3, 0, -4,
+                1, 0, -4,
+                -1, 0, -4,
+                -3, 0, -4
+            ];
+
+            //每个面的组成的下标
+            var indices = [
+                9, 8, 10,
+                8, 11, 10,
+                8, 4, 11,
+                11, 4, 7,
+                8, 5, 4,
+                8, 9, 5,
+                9, 10, 5,
+                10, 6, 5,
+                10, 7, 6,
+                10, 11, 7,
+                16, 12, 15,
+                16, 13, 12,
+                16, 14, 13,
+                16, 15, 14,
+                4, 18, 17,
+                4, 5, 18,
+                5, 19, 18,
+                5, 12, 19,
+                5, 6, 15,
+                5, 15, 12,
+                12, 20, 19,
+                12, 13, 20,
+                13, 1, 20,
+                13, 2, 1,
+                13, 14, 2,
+                14, 21, 2,
+                14, 22, 21,
+                14, 15, 22,
+                15, 23, 22,
+                15, 6, 23,
+                6, 24, 23,
+                7, 24, 6,
+                7, 3, 24,
+                7, 0, 3,
+                7, 4, 0,
+                4, 17, 0
+            ];
+
+            //根据最小的位置-4 -4 宽高都为8计算出来每个顶点的uv值
+            // 纹理映射只有uv两个值
+            var uvs = [];
+            for(var p = 0; p < positions.length / 3; p++) {
+                uvs.push((positions[3 * p] - (-4)) / 8, (positions[3 * p + 2] - (-4)) / 8);
+            }
+
+            var customMesh = new BABYLON.Mesh("custom", scene);
+
+            //设置一个空的法向量数组
+            var normals = [];
+
+            //通过位置和下标自动计算法向量
+            BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+
+            var vertexData = new BABYLON.VertexData();
+
+            vertexData.positions = positions;
+            vertexData.indices = indices;
+            vertexData.normals = normals; //Assignment of normal to vertexData added
+            vertexData.uvs = uvs;
+
+            vertexData.applyToMesh(customMesh);
+            customMesh.convertToFlatShadedMesh();
+
+            var mat = new BABYLON.StandardMaterial("", scene);
+            mat.diffuseTexture = new BABYLON.Texture("../images/co.png");
+            //mat.wireframe = true;
+
+            customMesh.material = mat;
+
+            // 添加轴向辅助线
+            var showAxis = function (size) {
+                var makeTextPlane = function (text, color, size) {
+                    var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+                    dynamicTexture.hasAlpha = true;
+                    dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+                    var plane = new BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
+                    plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+                    plane.material.backFaceCulling = false;
+                    plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+                    plane.material.diffuseTexture = dynamicTexture;
+                    return plane;
+                };
+
+                var axisX = BABYLON.Mesh.CreateLines("axisX", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
+                    new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
+                ], scene);
+                axisX.color = new BABYLON.Color3(1, 0, 0);
+                var xChar = makeTextPlane("X", "red", size / 10);
+                xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
+                var axisY = BABYLON.Mesh.CreateLines("axisY", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(-0.05 * size, size * 0.95, 0),
+                    new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(0.05 * size, size * 0.95, 0)
+                ], scene);
+                axisY.color = new BABYLON.Color3(0, 1, 0);
+                var yChar = makeTextPlane("Y", "green", size / 10);
+                yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
+                var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, -0.05 * size, size * 0.95),
+                    new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, 0.05 * size, size * 0.95)
+                ], scene);
+                axisZ.color = new BABYLON.Color3(0, 0, 1);
+                var zChar = makeTextPlane("Z", "blue", size / 10);
+                zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
+            };
+
+            showAxis(15);
+
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

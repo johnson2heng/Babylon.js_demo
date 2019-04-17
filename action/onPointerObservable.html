@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>鼠标交互事件</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas" touch-action="none" ></canvas>
+</body>
+<script src="../js/pep.min.js"></script>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+
+            // 场景对象
+            var scene = new BABYLON.Scene(engine);
+            var camera = new BABYLON.ArcRotateCamera("Camera", 0, 0, 10, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.setPosition(new BABYLON.Vector3(20, 200, 400));
+            camera.attachControl(canvas, true);
+
+            camera.upperBetaLimit = (Math.PI / 2) * 0.99;
+
+            // 光源
+            var light = new BABYLON.PointLight("omni", new BABYLON.Vector3(50, 200, 0), scene);
+
+            // 材质
+            var groundMaterial = new BABYLON.StandardMaterial("ground", scene);
+            groundMaterial.specularColor = BABYLON.Color3.Black();
+
+            var redMat = new BABYLON.StandardMaterial("ground", scene);
+            redMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+            redMat.specularColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+            redMat.emissiveColor = BABYLON.Color3.Red();
+
+            var greenMat = new BABYLON.StandardMaterial("ground", scene);
+            greenMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+            greenMat.specularColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+            greenMat.emissiveColor = BABYLON.Color3.Green();
+
+            var blueMat = new BABYLON.StandardMaterial("ground", scene);
+            blueMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+            blueMat.specularColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+            blueMat.emissiveColor = BABYLON.Color3.Blue();
+
+            var purpleMat = new BABYLON.StandardMaterial("ground", scene);
+            purpleMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+            purpleMat.specularColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+            purpleMat.emissiveColor = BABYLON.Color3.Purple();
+
+            /*************************************模型****************************************/
+
+            // 地面
+            var ground = BABYLON.MeshBuilder.CreateGround("ground", {width:1000, height:1000}, scene, false);
+            ground.material = groundMaterial;
+
+            // 模型
+            var redSphere = BABYLON.MeshBuilder.CreateSphere("red", {diameter:20}, scene);
+            redSphere.material = redMat;
+            redSphere.position.y = 10;
+            redSphere.position.x -= 100;
+
+            var greenBox = BABYLON.MeshBuilder.CreateBox("green", {size:20}, scene);
+            greenBox.material = greenMat;
+            greenBox.position.z -= 100;
+            greenBox.position.y = 10;
+
+            var blueBox = BABYLON.MeshBuilder.CreateBox("blue", {size:20}, scene);
+            blueBox.material = blueMat;
+            blueBox.position.x += 100;
+            blueBox.position.y = 10;
+
+            var purpleDonut = BABYLON.MeshBuilder.CreateTorus("red", {diameter:30, thickness:10}, scene);
+            purpleDonut.material = purpleMat;
+            purpleDonut.position.y = 10;
+            purpleDonut.position.z += 100;
+
+            var startingPoint;
+            var currentMesh;
+
+            //获取到鼠标场景按下时，鼠标拾取的地面的位置
+            var getGroundPosition = function () {
+                var pickinfo = scene.pick(scene.pointerX, scene.pointerY, function (mesh) { return mesh == ground; });
+                if (pickinfo.hit) {
+                    return pickinfo.pickedPoint;
+                }
+
+                return null;
+            };
+
+            var pointerDown = function (mesh) {
+                currentMesh = mesh;
+                startingPoint = getGroundPosition();
+                if (startingPoint) { // 开始拖拽模型将取消相机的鼠标事件
+                    setTimeout(function () {
+                        camera.detachControl(canvas);
+                    }, 0);
+                }
+            };
+
+            var pointerUp = function () {
+                if (startingPoint) {
+                    camera.attachControl(canvas, true);
+                    startingPoint = null;
+                    return;
+                }
+            };
+
+            //获取到鼠标按下后移动的距离，并赋值给模型
+            var pointerMove = function () {
+                if (!startingPoint) {
+                    return;
+                }
+                var current = getGroundPosition();
+                if (!current) {
+                    return;
+                }
+
+                var diff = current.subtract(startingPoint);
+                currentMesh.position.addInPlace(diff);
+
+                startingPoint = current;
+
+            };
+
+            scene.onPointerObservable.add((pointerInfo) => {
+                switch (pointerInfo.type) {
+                    case BABYLON.PointerEventTypes.POINTERDOWN:
+                        //鼠标按下时判断是否拾取到并且不是地面
+                        if(pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh != ground) {
+                            pointerDown(pointerInfo.pickInfo.pickedMesh)
+                        }
+                        break;
+                    case BABYLON.PointerEventTypes.POINTERUP:
+                        pointerUp();
+                        break;
+                    case BABYLON.PointerEventTypes.POINTERMOVE:
+                        pointerMove();
+                        break;
+                }
+            });
+
+            // 添加轴向辅助线
+            var showAxis = function (size) {
+                var makeTextPlane = function (text, color, size) {
+                    var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+                    dynamicTexture.hasAlpha = true;
+                    dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+                    var plane = new BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
+                    plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+                    plane.material.backFaceCulling = false;
+                    plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+                    plane.material.diffuseTexture = dynamicTexture;
+                    return plane;
+                };
+
+                var axisX = BABYLON.Mesh.CreateLines("axisX", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
+                    new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
+                ], scene);
+                axisX.color = new BABYLON.Color3(1, 0, 0);
+                var xChar = makeTextPlane("X", "red", size / 10);
+                xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
+                var axisY = BABYLON.Mesh.CreateLines("axisY", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(-0.05 * size, size * 0.95, 0),
+                    new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(0.05 * size, size * 0.95, 0)
+                ], scene);
+                axisY.color = new BABYLON.Color3(0, 1, 0);
+                var yChar = makeTextPlane("Y", "green", size / 10);
+                yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
+                var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, -0.05 * size, size * 0.95),
+                    new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, 0.05 * size, size * 0.95)
+                ], scene);
+                axisZ.color = new BABYLON.Color3(0, 0, 1);
+                var zChar = makeTextPlane("Z", "blue", size / 10);
+                zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
+            };
+
+            showAxis(10);
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>
