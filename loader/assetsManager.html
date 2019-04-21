@@ -55,40 +55,36 @@
             var assetsManager = new BABYLON.AssetsManager(scene);
 
             //加载巨炮
-            var meshTask = assetsManager.addMeshTask("slugger", "", "../models/babylon/redAlert/jp/", "jp.babylon");
+            var meshTask = assetsManager.addMeshTask("slugger", "", "../models/redAlert/jp/", "jp.gltf");
             meshTask.onSuccess = function (task) {
                 task.loadedMeshes[0].position = new BABYLON.Vector3(20, 0, 0);
             };
 
             //加载光棱塔
-            var gltTask = assetsManager.addMeshTask("glt", "", "../models/babylon/redAlert/glt/", "glt.babylon");
+            var gltTask = assetsManager.addMeshTask("glt", "", "../models/redAlert/glt/", "glt.gltf");
             gltTask.onSuccess = function (task) {
                 task.loadedMeshes[0].position = new BABYLON.Vector3(-20, 0, 0);
             };
 
             //加载四管机枪炮
-            var sgjqpTask = assetsManager.addMeshTask("sgjqp", "", "../models/babylon/redAlert/sgjqp/", "sgjqp.babylon");
+            var sgjqpTask = assetsManager.addMeshTask("sgjqp", "", "../models/redAlert/sgjqp/", "sgjqp.gltf");
             sgjqpTask.onSuccess = function (task) {
                 task.loadedMeshes[0].position = new BABYLON.Vector3(0, 0, 0);
             };
 
             //加载僵尸
-            var sgjqpTask = assetsManager.addMeshTask("bobby", "", "../models/babylon/zombie/bobby/", "bobby.babylon");
-            sgjqpTask.onSuccess = function (task) {
-                task.loadedMeshes[0].scaling = new BABYLON.Vector3(.1, .1, .1);
-                task.loadedMeshes[0].position = new BABYLON.Vector3(0, 0, 20);
-            };
-
-            var sgjqpTask = assetsManager.addMeshTask("parent", "", "../models/babylon/zombie/parent/", "parent.babylon");
-            sgjqpTask.onSuccess = function (task) {
-                task.loadedMeshes[0].scaling = new BABYLON.Vector3(.1, .1, .1);
+            var maleTask = assetsManager.addMeshTask("parent", "", "../models/redAlert/zombie/", "male_zomb_v3.gltf");
+            maleTask.onSuccess = function (task) {
                 task.loadedMeshes[0].position = new BABYLON.Vector3(-20, 0, 20);
             };
 
-            var sgjqpTask = assetsManager.addMeshTask("women", "", "../models/babylon/zombie/women/", "women.babylon");
-            sgjqpTask.onSuccess = function (task) {
-                task.loadedMeshes[0].scaling = new BABYLON.Vector3(.1, .1, .1);
+            var femaleTask = assetsManager.addMeshTask("women", "", "../models/redAlert/zombie/", "female_zomb_v1.gltf");
+            femaleTask.onSuccess = function (task) {
+                console.log(task);
+                //task.loadedMeshes[0].scaling = new BABYLON.Vector3(.1, .1, .1);
                 task.loadedMeshes[0].position = new BABYLON.Vector3(20, 0, 20);
+
+                console.log(task.loadedMeshes[1].getBoundingInfo());
             };
 
             assetsManager.load();

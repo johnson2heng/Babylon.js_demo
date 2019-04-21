@@ -48,10 +48,10 @@
             camera.attachControl(canvas, true);
 
             //增加wsad - 自由相机位移的四个按键
-            camera.inputs.attached.keyboard.keysUp.push(87);
-            camera.inputs.attached.keyboard.keysDown.push(83);
-            camera.inputs.attached.keyboard.keysLeft.push(65);
-            camera.inputs.attached.keyboard.keysRight.push(68);
+            camera.keysUp.push(87);
+            camera.keysDown.push(83);
+            camera.keysLeft.push(65);
+            camera.keysRight.push(68);
 
             console.log(camera.inputs);
 

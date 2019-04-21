@@ -28,111 +28,303 @@
 <script src="../js/babylonjs.loaders.min.js"></script>
 <script>
     window.addEventListener('DOMContentLoaded', function () {
+
+        const zombies = [];
+
         // 获取到canvas的dom对象
         var canvas = document.getElementById('renderCanvas');
 
         // 实例化3d引擎
         var engine = new BABYLON.Engine(canvas, true);
+        engine.loadingUIText = "加载资源中...";
 
         // 创建场景并返回场景对象
         var createScene = function () {
+
+            //阻止右键菜单
+            document.oncontextmenu = function (event) {
+                event.preventDefault();
+            };
 
             // 创建场景
             var scene = new BABYLON.Scene(engine);
 
             // 相机
-            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 1.25, 200, new BABYLON.Vector3(0, 0, 0), scene);
-            camera.attachControl(canvas, true);
+            var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, Math.PI / 6, 50, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, false);
 
             // 光
-            var directionalLight = new BABYLON.DirectionalLight("directional", new BABYLON.Vector3(-50, -20.0, -20.0), scene);
+            var directionalLight = new BABYLON.DirectionalLight("directional", new BABYLON.Vector3(100, -200.0, -100.0), scene);
 
             // 创建天空盒子
             var hdrTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("../images/environment.dds", scene);
             var currentSkybox = scene.createDefaultSkybox(hdrTexture, true);
 
             //地面
-            var ground = BABYLON.MeshBuilder.CreateGround('ground1', {width: 600, height: 400, subdivsions: 4}, scene);
+            var ground = BABYLON.MeshBuilder.CreateGround('ground1', {width: 600, height: 400, subdivsions: 4}, scene);//地面材质
+            var groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+            groundMat.diffuseTexture = new BABYLON.Texture("../images/ground.jpg", scene);
+            groundMat.specularColor = new BABYLON.Color3(0, 0, 0);
+            const step = 20;
+            groundMat.diffuseTexture.uScale = step;
+            groundMat.diffuseTexture.vScale = step;
+            ground.material = groundMat;
+            ground.material.backFaceCulling = false;
+            ground.receiveShadows = true;
 
             // 创建一个球题 支持六个配置项 名称, 分割段数, 直径, 放置的场景, updatable, sideOrientation
-            var sphere = BABYLON.MeshBuilder.CreateSphere('sphere1', {diameter: 1}, scene);
+            var sphere = BABYLON.MeshBuilder.CreateSphere('sphere1', {diameter: .5}, scene);
 
             //球体自发光
-            var hl = new BABYLON.HighlightLayer("hl1", scene);
-            hl.addMesh(sphere, BABYLON.Color3.Green());
+            //var hl = new BABYLON.HighlightLayer("hl1", scene);
+            //hl.addMesh(sphere, BABYLON.Color3.Green());
 
-            // 向场景添加一个gltf模型
-            BABYLON.SceneLoader.ImportMesh("", "../models/redAlert/jp/", "jp.gltf", scene, function (mesh) {
+            //创建一个资源管理器
+            var assetsManager = new BABYLON.AssetsManager(scene);
+
+            // 向场景添加巨炮
+            var meshTask = assetsManager.addMeshTask("slugger", "", "../models/redAlert/jp/", "jp.gltf");
+
+            // 向场景添加丧尸模型
+            const zombie = assetsManager.addMeshTask("women", "", "../models/redAlert/zombie/", "female_zomb_v1.gltf");
+
+
+            //所有模型加载完成的回调
+            assetsManager.onTasksDoneObservable.add(function () {
+
+                var shadowGenerator = new BABYLON.ShadowGenerator(4096, directionalLight);
+
+                const femaleZombie = zombie.loadedMeshes[0];
+                scene.removeMesh(femaleZombie, true);
+
+                //克隆一个丧尸，放到另外一个位置
+                /*const newZombie = femaleZombie.clone();
+                newZombie.position.x = -10;
+
+                shadowGenerator.getShadowMap().renderList.push(newZombie._children[0]);*/
+
+                //设置巨炮的相关信息
+                const mesh = meshTask.loadedMeshes;
+
+                shadowGenerator.getShadowMap().renderList.push(mesh[0]);
+                shadowGenerator.getShadowMap().renderList.push(mesh[1]);
+                shadowGenerator.getShadowMap().renderList.push(mesh[2]);
+
+                mesh[0].receiveShadows = mesh[1].receiveShadows = mesh[2].receiveShadows = true;
+
+                mesh[0].scaling = mesh[0].scaling.scale(1 / 3);
+
+                //获取到巨炮对象
+                const jp = mesh[0]._children[0];
+
                 //todo:显示包围盒
-                /*console.log(mesh[0]._children[0]);
+                /*console.log(mesh[0].scaling);
                 console.log(mesh[0]._children[0].getBoundingInfo());
                 console.log(mesh[0]._children[1].getBoundingInfo());
 
                 mesh[0]._children[0].showBoundingBox = true;
                 mesh[0]._children[1].showBoundingBox = true;*/
 
-                //todo：自发光代码
-                /*var gl = new BABYLON.GlowLayer("glow", scene, {
-                    mainTextureSamples: 4
-                });
-
-                mesh[0]._children[0].material.emissiveColor = BABYLON.Color3.Teal();
-
-                gl.addIncludedOnlyMesh(mesh[0]._children[1]);*/
-
                 //todo：实现随机巨炮设计位置，并绘制出巨炮的炮弹路线
                 let position, index, boom, cubicBezierVectors, cubicBezierCurve, shot = true;
+                let jpTarget = null; //当前巨炮的目标位置，没有为空
 
-                reset();
+                /*setInterval(function () {
+                    jpTarget = setTarget(10);
+                }, 5000);*/
+
+                //reset();
 
                 //设置定时器实现重新渲染
-                setInterval(reset, 5000);
+                //setInterval(reset, 5000);
 
-                function reset() {
+                function attack() {
                     if (!shot) return;
                     shot = false;
-                    position = new BABYLON.Vector3(200 * Math.random() - 100, 4, 200 * Math.random() - 100);
+                    //position = setTarget(10); //new BABYLON.Vector3(200 * Math.random() - 100, 4, 200 * Math.random() - 100);
                     index = 0;
                     boom = true;
 
+                    //生成一个丧尸
+                    //createZombie(zombie);
+
                     //生成曲线顶点数组
+                    let position = jpTarget.clone();
+                    position.y = 1.2;
                     cubicBezierVectors = creatCurve(position);
 
-                    if (!cubicBezierCurve) {
+                    //曲线辅助线
+                    /*if (!cubicBezierCurve) {
                         cubicBezierCurve = BABYLON.MeshBuilder.CreateLines("cbezier", {
                             points: cubicBezierVectors.getPoints(),
                             updatable: true
                         }, scene);
                         //生成的曲线对象
                         cubicBezierCurve.color = new BABYLON.Color3(1, 1, 0);
-                    } else {
+                    }
+                    else {
                         BABYLON.MeshBuilder.CreateLines("cbezier", {
                             points: cubicBezierVectors.getPoints(),
                             instance: cubicBezierCurve
                         });
-                    }
+                    }*/
 
                     //设置巨炮的转向
-                    mesh[0]._children[0].rotationQuaternion = null; //保证转向正确，每次旋转后将四元数设置为null
-                    mesh[0]._children[0].rotation.y = getAngle(position) / 180 * Math.PI;
+                    /*jp.rotationQuaternion = null; //保证转向正确，每次旋转后将四元数设置为null
+                    jp.rotation.y = getAngle(position) / 180 * Math.PI;*/
+                }
+
+                //生成一个丧尸
+                function createZombie(zombie) {
+                    const femaleZombie = zombie.loadedMeshes[0].clone();
+
+                    femaleZombie.position = setTarget(50);
+                    femaleZombie.position.y = 0;
+
+                    femaleZombie.lookAt(new BABYLON.Vector3.Zero());
+
+                    shadowGenerator.addShadowCaster(femaleZombie._children[0]);
+
+                    scene.addMesh(femaleZombie);
+
+                    zombies.push(femaleZombie);
+                }
+
+                //更新丧尸的位置和朝向
+                const zombieSpeed = .05; //设置丧尸的移动速度
+                function updateZombiePosition() {
+                    zombies.forEach(function (item) {
+                        let v = item.position.clone().normalize().scale(zombieSpeed);
+                        item.position = item.position.subtract(v);
+                    });
+                }
+
+                //检测当前巨炮是否可以攻击
+                let attackTime = 0;
+
+                function updateAttack() {
+                    if (shot) return; //如果可以射击状态，将不更新
+                    attackTime += 1000 / 60;
+                    if (attackTime > 3000) {
+                        shot = true;
+                        attackTime = 0;
+                    }
+                }
+
+                //获取巨炮的目标
+                function getTarget() {
+                    let distance; //距离巨炮最短的距离
+                    let index = 0; //距离巨炮最短距离的丧尸下标
+                    for (let i = 0; i < zombies.length; i++) {
+                        let zombie = zombies[i];
+                        if (i === 0) {
+                            distance = BABYLON.Vector3.Distance(zombie.position, BABYLON.Vector3.Zero());
+                        }
+
+                        //判断大小
+                        if (BABYLON.Vector3.Distance(zombie.position, BABYLON.Vector3.Zero()) < distance) {
+                            distance = BABYLON.Vector3.Distance(zombie.position, BABYLON.Vector3.Zero());
+                            index = i;
+                        }
+                    }
+
+                    //console.log(zombie)
+
+                    if (zombies.length > 0 && distance < 20) {
+                        jpTarget = zombies[index].position;
+                    }
+                }
+
+                //更新巨炮的朝向
+                function updateJpDirection() {
+                    getTarget();
+                    if (!jpTarget) return;
+
+                    //获取到目标的角度
+                    let targetY = getAngle(jpTarget) / Math.PI * 180 - 90;
+                    if (targetY < 0) targetY += 360;
+                    //设置每一帧巨炮的旋转角度
+                    const step = Math.PI / 180;
+                    //如果和目标夹角小于一度，则不旋转
+                    if (Math.abs(jp.rotation.y * 180 / Math.PI - targetY) < 1) {
+                        //如果度数小于1，则可以出发射击事件
+                        attack();
+                        return;
+                    }
+                    //判断巨炮的旋转方向
+                    jp.rotationQuaternion = null; //保证转向正确，每次旋转后将四元数设置为null
+                    if (getRotate(jp.rotation.y * 180 / Math.PI, targetY)) {
+                        jp.rotation.y += step;
+                    } else {
+                        jp.rotation.y -= step;
+                    }
+
+                    //将y的值保证在0到360中间
+                    if (jp.rotation.y < 0) {
+                        jp.rotation.y += Math.PI * 2;
+                    }
+                    jp.rotation.y %= Math.PI * 2;
+
+                    //console.log(targetY, jp.rotation.y*180/Math.PI);
+                }
+
+                //巨炮射击后，清除当前炮弹范围内的丧尸
+                function clearZombie(position) {
+                    for (let i = zombies.length - 1; i >= 0; i--) {
+                        let zombie = zombies[i];
+                        if (BABYLON.Vector3.Distance(zombie.position, position) < 2) {
+                            scene.removeMesh(zombie, true);
+                            shadowGenerator.removeShadowCaster(zombie._children[0]);
+                            zombie.dispose();
+                            zombies.splice(i, 1);
+                        }
+                    }
+                }
+
+                //每五秒创建一个丧尸
+                let zombieTime = 0; //记录当前的时间的
+                function updateZombieCreater() {
+                    zombieTime += 1000 / 60;
+                    if (zombieTime >= 5000) {
+                        zombieTime %= 5000;
+                        //触发创建丧尸事件
+                        createZombie(zombie);
+
+                        console.log('触发创建丧尸事件');
+                    }
                 }
 
                 //每一帧渲染前的运算
                 scene.registerBeforeRender(function () {
-                    index += .5;
+                    updateAttack();
+                    updateZombieCreater();
+                    updateZombiePosition();
+                    updateJpDirection();
+
+                    if (!cubicBezierVectors) return;
+                    index += 1;
                     if (index >= cubicBezierVectors.length()) {
                         //判断当前是否可以实现爆炸效果
                         if (boom) {
                             boom = false;
-                            shot = true;
-                            Explode(position);
-                            sphere.position = new BABYLON.Vector3(position.x, 0, position.z);
+                            //shot = true;
+                            Explode(jpTarget);
+                            sphere.position = new BABYLON.Vector3(jpTarget.x, 0, jpTarget.z);
+                            sphere.visibility = 0;
+
+                            jpTarget = null;
+
+                            clearZombie(sphere.position.clone());
                         }
                         return;
                     }
+                    sphere.visibility = 1;
                     sphere.position = getPosition(cubicBezierVectors, index / cubicBezierVectors.length());
                 });
             });
+
+            //开启下载器下载
+            assetsManager.load();
 
             // 添加轴向辅助线
             var showAxis = function (size) {
@@ -171,7 +363,7 @@
                 zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
             };
 
-            showAxis(10);
+            //showAxis(10);
 
             // 返回场景
             return scene;
@@ -189,16 +381,16 @@
             fireBlast.emitRate = 5000;
 
             // 粒子尺寸范围
-            fireBlast.minSize = 6;
-            fireBlast.maxSize = 12;
+            fireBlast.minSize = 2;
+            fireBlast.maxSize = 4;
 
             // 粒子存活时间
-            fireBlast.minLifeTime = 1;
-            fireBlast.maxLifeTime = 3;
+            fireBlast.minLifeTime = .5;
+            fireBlast.maxLifeTime = 1.5;
 
             // 发射速度
-            fireBlast.minEmitPower = 30;
-            fireBlast.maxEmitPower = 60;
+            fireBlast.minEmitPower = 2;
+            fireBlast.maxEmitPower = 4;
 
             // 限制最大速度
             fireBlast.addLimitVelocityGradient(0, 40);
@@ -310,8 +502,42 @@
 
             if (angle < 0) angle += 2 * Math.PI;
 
-            return angle / Math.PI * 180 - 90;
+            return angle;
         }
+
+        //根据距离和旋转角度生成一个目标位置
+        function setTarget(maxLen) {
+            //首先随机一个角度
+            const deg = Math.PI * 2 * Math.random();
+            //随机一个距离
+            const len = maxLen + maxLen;
+            //求出x坐标
+            const x = Math.cos(deg) * len;
+            //求出y坐标
+            const y = Math.sin(deg) * len;
+
+            console.log(deg / Math.PI * 180, len, x, y);
+            return new BABYLON.Vector3(x, 1.2, y);
+        }
+
+        //平面上两个角度，返回当前角度旋转方向
+        function getRotate(start, end) {
+            if (end > start) {
+                if (end - start > 180) {
+                    return 0;
+                } else {
+                    return 1;
+                }
+            } else {
+                if (start - end > 180) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+        }
+
+        //setTarget(100);
 
         // 获取到创建的场景
         var scene = createScene();
@@ -319,6 +545,7 @@
         // 循环渲染，性能最大每秒六十帧
         engine.runRenderLoop(function () {
             scene.render();
+            //console.log(engine.getDeltaTime());
         });
 
         // 浏览器大小变动时，触发引擎的重载状态
