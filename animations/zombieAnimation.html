@@ -138,12 +138,12 @@
                 addBtn('arise-03', 1990, 2230);
                 addBtn('arise-04', 2235, 2475);
 
-                function addBtn(name,from,to) {
+                function addBtn(name, from, to) {
                     const li = document.createElement('li');
                     li.innerText = name;
-                    li.onclick = function(){
+                    li.onclick = function () {
                         animationGroup.stop();
-                        animationGroup.start(false, 1, from/2475*82.5, to/2475*82.5);
+                        animationGroup.start(false, 1, from / 2475 * 82.5, to / 2475 * 82.5);
                     };
                     ul.appendChild(li);
                 }
