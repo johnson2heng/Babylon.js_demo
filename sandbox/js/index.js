@@ -156,7 +156,7 @@ if (BABYLON.Engine.isSupported()) {
                 currentScene.activeCamera.useFramingBehavior = true;
 
                 //开启自动旋转
-                currentScene.activeCamera.useAutoRotationBehavior = true;
+                //currentScene.activeCamera.useAutoRotationBehavior = true;
 
                 //设置默认显示垂直角度
                 //currentScene.activeCamera.beta = 1;
@@ -476,6 +476,7 @@ slider.addEventListener("mouseup", function() {
 });
 
 
+/*
 setTimeout(function () {
     loadFromAssetUrl('./nts/nts.gltf');
-}, 3000);
+}, 3000);*/
