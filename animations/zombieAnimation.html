@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>丧尸模型动画</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        .list {
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .list li {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-top: 5px;
+            height: 20px;
+            line-height: 18px;
+            width: 120px;
+            text-align: center;
+            cursor: pointer;
+            list-style-type: none;
+            background: aliceblue;
+            font-weight: bold;
+            font-family: "Microsoft YaHei";
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+<ul class="list" id="list"></ul>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script src="../js/babylonjs.loaders.min.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+
+            // 这里非常重要，用来设置 Babylon.js 使用 decomposeLerp and matrix interpolation 进行动画之间的矩阵插值
+            //BABYLON.Animation.AllowMatricesInterpolation = true;
+
+            //场景
+            var scene = new BABYLON.Scene(engine);
+
+            //相机
+            var camera = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 3, new BABYLON.Vector3(0, 1, 0), scene);
+            camera.attachControl(canvas, true);
+
+            camera.lowerRadiusLimit = 2;
+            camera.upperRadiusLimit = 10;
+            camera.wheelDeltaPercentage = 0.01;
+
+            //两个光源
+            var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 0.6;
+            light.specular = BABYLON.Color3.Black();
+
+            var light2 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -0.5, -1.0), scene);
+            light2.position = new BABYLON.Vector3(0, 5, 5);
+
+            // 阴影
+            var shadowGenerator = new BABYLON.ShadowGenerator(1024, light2);
+            shadowGenerator.useBlurExponentialShadowMap = true;
+            shadowGenerator.blurKernel = 32;
+
+            //创建一个资源管理器
+            var assetsManager = new BABYLON.AssetsManager(scene);
+
+            // 向场景添加丧尸模型
+            const zombie = assetsManager.addMeshTask("femaleZombie", "", "../models/redAlert/female_zomb_v1/", "scene.gltf");
+
+            //开启下载器下载
+            assetsManager.load();
+
+            assetsManager.onTasksDoneObservable.add(() => {
+
+                const ul = document.getElementById('list');
+
+                const animationGroup = zombie.loadedAnimationGroups[0];
+
+                const skeleton = zombie.loadedSkeletons[0];
+
+                //停止动画
+                animationGroup.stop();
+                //添加动画
+                addBtn('T-POSE', 0, 3);
+                addBtn('Idle1', 5, 100);
+                addBtn('Idle2', 110, 240);
+                addBtn('Idle3', 250, 330);
+                addBtn('walk', 340, 390);
+                addBtn('run', 400, 440);
+                addBtn('hit reaction1', 450, 500);
+                addBtn('hit reaction2', 500, 550);
+                addBtn('hit reaction3', 550, 600);
+                addBtn('Attack1', 600, 650);
+                addBtn('Attack2', 650, 720);
+                addBtn('death1', 720, 780);
+                addBtn('death2', 800, 870);
+                addBtn('death3', 900, 980);
+                addBtn('stand up', 1000, 1150);
+                addBtn('eat_start', 1160, 1200);
+                addBtn('eat_loop', 1200, 1290);
+                addBtn('eat_end', 1290, 1350);
+                addBtn('walk_back', 1360, 1400);
+                addBtn('run_fast', 1410, 1430);
+                addBtn('crawl', 1440, 1490);
+                addBtn('crawl attack', 1490, 1550);
+                addBtn('crawl idle', 1550, 1600);
+                addBtn('crawl death', 1600, 1650);
+                addBtn('lunatic walk', 1660, 1700);
+                addBtn('pose defence', 1710, 1738);
+                addBtn('pose 0', 1740, 1769);
+                addBtn('arise-01', 1770, 1840);
+                addBtn('arise-02', 1860, 1970);
+                addBtn('arise-03', 1990, 2230);
+                addBtn('arise-04', 2235, 2475);
+
+                function addBtn(name,from,to) {
+                    const li = document.createElement('li');
+                    li.innerText = name;
+                    li.onclick = function(){
+                        animationGroup.stop();
+                        animationGroup.start(false, 1, from/2475*82.5, to/2475*82.5);
+                    };
+                    ul.appendChild(li);
+                }
+            });
+
+            // 添加轴向辅助线
+            const showAxis = function (size) {
+                var makeTextPlane = function (text, color, size) {
+                    var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+                    dynamicTexture.hasAlpha = true;
+                    dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+                    var plane = new BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
+                    plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+                    plane.material.backFaceCulling = false;
+                    plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+                    plane.material.diffuseTexture = dynamicTexture;
+                    return plane;
+                };
+
+                var axisX = BABYLON.Mesh.CreateLines("axisX", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
+                    new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
+                ], scene);
+                axisX.color = new BABYLON.Color3(1, 0, 0);
+                var xChar = makeTextPlane("X", "red", size / 10);
+                xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
+                var axisY = BABYLON.Mesh.CreateLines("axisY", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(-0.05 * size, size * 0.95, 0),
+                    new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(0.05 * size, size * 0.95, 0)
+                ], scene);
+                axisY.color = new BABYLON.Color3(0, 1, 0);
+                var yChar = makeTextPlane("Y", "green", size / 10);
+                yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
+                var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, -0.05 * size, size * 0.95),
+                    new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, 0.05 * size, size * 0.95)
+                ], scene);
+                axisZ.color = new BABYLON.Color3(0, 0, 1);
+                var zChar = makeTextPlane("Z", "blue", size / 10);
+                zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
+            };
+
+            showAxis(10);
+
+            return scene;
+        };
+
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>

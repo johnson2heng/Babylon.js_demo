@@ -98,6 +98,8 @@
             BABYLON.SceneLoader.ImportMesh("", "../models/", "dummy3.babylon", scene, function (newMeshes, particleSystems, skeletons) {
                 var skeleton = skeletons[0];
 
+                console.log(skeleton);
+
                 shadowGenerator.addShadowCaster(scene.meshes[0], true);
                 for (var index = 0; index < newMeshes.length; index++) {
                     newMeshes[index].receiveShadows = false;
