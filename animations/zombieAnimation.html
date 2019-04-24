@@ -59,9 +59,6 @@
         // 创建场景并返回场景对象
         var createScene = function () {
 
-            // 这里非常重要，用来设置 Babylon.js 使用 decomposeLerp and matrix interpolation 进行动画之间的矩阵插值
-            //BABYLON.Animation.AllowMatricesInterpolation = true;
-
             //场景
             var scene = new BABYLON.Scene(engine);
 
@@ -103,6 +100,9 @@
 
                 const skeleton = zombie.loadedSkeletons[0];
 
+                //获取到复制的动画组
+                const newGroup = cloneMesh(zombie, new BABYLON.Vector3(2, 0, 0));
+
                 //停止动画
                 animationGroup.stop();
                 //添加动画
@@ -142,12 +142,66 @@
                     const li = document.createElement('li');
                     li.innerText = name;
                     li.onclick = function () {
-                        animationGroup.stop();
                         animationGroup.start(false, 1, from / 2475 * 82.5, to / 2475 * 82.5);
                     };
                     ul.appendChild(li);
                 }
             });
+
+            function cloneMesh(meshTask, position) {
+                console.log(meshTask);
+
+                const animationGroup = meshTask.loadedAnimationGroups[0];
+                const mesh = meshTask.loadedMeshes[0].clone();
+                const skeleton = meshTask.loadedSkeletons[0].clone();
+                const animations = animationGroup.targetedAnimations;
+
+                mesh.position = position;
+                //mesh.rotationQuaternion = null;
+                //mesh.rotation.x = -Math.PI/2;
+
+                console.log(animationGroup);
+
+                const childMeshes = mesh.getChildMeshes(); //获取到所有的mesh
+                //childMeshes[0].skeleton = skeleton;
+                const childTransformNodes = mesh.getChildTransformNodes(); //获取到所有的TransformNodes
+
+                console.log(childMeshes);
+                console.log(childTransformNodes);
+
+                childTransformNodes[23].position.y = 10;
+
+                const arr = [];
+                childTransformNodes.forEach(function (item) {
+                    console.log();
+                    const name = item.name.split('.');
+                    arr.push(name[name.length - 1]);
+                });
+                //console.log(arr);
+
+                //创建一个新的绑定新模型的animationGroup
+                const newAnimationGroup = new BABYLON.AnimationGroup();
+                animations.forEach(function (item) {
+                    //console.log(item.target.name);
+                    for(let i of skeleton.bones){
+                        const name = i.name.split('.');
+                        if(item.target.name === i.name){
+                            const animation = item.animation.clone();
+                            //const a = new BABYLON.Animation(item.animation.name,)
+                            i.animations.push(animation);
+                            newAnimationGroup.addTargetedAnimation(animation, i);
+                            console.log(true);
+                            return;
+                        }
+                    }
+                });
+
+                console.log(newAnimationGroup);
+
+                newAnimationGroup.play();
+
+                return newAnimationGroup;
+            }
 
             // 添加轴向辅助线
             const showAxis = function (size) {
