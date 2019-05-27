@@ -20,6 +20,9 @@ var footer = document.getElementById("footer");
 var canvas = document.getElementById("renderCanvas");
 var canvasZone = document.getElementById("canvasZone");
 
+// 这里非常重要，用来设置 Babylon.js 使用 decomposeLerp and matrix interpolation 进行动画之间的矩阵插值
+BABYLON.Animation.AllowMatricesInterpolation = true;
+
 var indexOf = location.href.indexOf("?");
 if (indexOf !== -1) {
     var params = location.href.substr(indexOf + 1).split("&");

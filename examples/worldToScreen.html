@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>世界坐标转屏幕坐标</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            // 创建场景对象
+            var scene = new BABYLON.Scene(engine);
+
+            // 创建FreeCamera, 并把相机位置设置到(x:0, y:5, z:-10)
+            var camera = new BABYLON.FreeCamera('camera1', new BABYLON.Vector3(0, 5, -10), scene);
+
+            // 将相机朝向设置到原点
+            camera.setTarget(BABYLON.Vector3.Zero());
+
+            // 相机事件绑定到canvas对象上面
+            camera.attachControl(canvas, false);
+
+            // 创建一个平衡光，将灯光位置设置到0 1 0
+            var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0, 1, 0), scene);
+
+            // 创建一个球题 支持六个配置项 名称, 分割段数, 直径, 放置的场景, updatable, sideOrientation
+            var sphere = BABYLON.Mesh.CreateSphere('sphere1', 16, 2, scene);
+
+            // 将球上调到原点以上
+            sphere.position.y = 1;
+
+            // 创建地面
+            var ground = BABYLON.Mesh.CreateGround('ground1', 6, 6, 2, scene);
+
+            //创建显示球体位置的点
+            var dom = document.createElement('div');
+            dom.style.cssText = 'position:absolute; left:0; top:0; background:#fff; border-radius:5px; box-shadow:1px 1px 5px #000; padding:5px; transform:translate(-50%, -50%);';
+            document.body.appendChild(dom);
+
+            //在每一帧渲染之前获得模型的位置
+            scene.beforeRender = function () {
+                var worldMatrix = sphere.getWorldMatrix();
+                var transformMatrix = scene.getTransformMatrix();
+                var position = sphere.position;
+                var viewport = scene.activeCamera.viewport;
+                var coordinates = BABYLON.Vector3.Project(new BABYLON.Vector3, worldMatrix, transformMatrix, viewport);
+
+                dom.style.top = window.innerHeight * coordinates.y + "px";
+                dom.style.left = window.innerWidth * coordinates.x + "px";
+                dom.innerText = 'top: ' + dom.style.top + "\n" +
+                    'left: ' + dom.style.left;
+            };
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>
