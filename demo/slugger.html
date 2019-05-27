@@ -255,7 +255,8 @@
                     jp.rotationQuaternion = null; //保证转向正确，每次旋转后将四元数设置为null
                     if (getRotate(jp.rotation.y * 180 / Math.PI, targetY)) {
                         jp.rotation.y += step;
-                    } else {
+                    }
+                    else {
                         jp.rotation.y -= step;
                     }
 

@@ -100,11 +100,29 @@
                 const ul = document.getElementById('list');
 
                 const animationGroup = zombie.loadedAnimationGroups[0];
+                animationGroup.normalize(0, 2475);
 
                 const skeleton = zombie.loadedSkeletons[0];
 
+                console.log(animationGroup.targetedAnimations);
+
+                const cloneMesh = zombie.loadedMeshes[1].clone('femaleZombie2');
+
+                //cloneMesh.skeleton = skeleton.clone("skeleton2");
+
+                cloneMesh.position.x = -1;
+
+                console.log(zombie.loadedMeshes[0], cloneMesh);
+
+                //addNewDragon(zombie.loadedMeshes[0], animationGroup, 3);
+
                 //停止动画
                 animationGroup.stop();
+
+                //const newGroup = animationGroup.clone('new');
+
+                //newGroup.play();
+
                 //添加动画
                 addBtn('T-POSE', 0, 3);
                 addBtn('Idle1', 5, 100);
@@ -142,12 +160,55 @@
                     const li = document.createElement('li');
                     li.innerText = name;
                     li.onclick = function () {
-                        animationGroup.stop();
                         animationGroup.start(false, 1, from / 2475 * 82.5, to / 2475 * 82.5);
                     };
                     ul.appendChild(li);
                 }
             });
+
+            addNewDragon = function(mesh, animationGroup, x) {
+                var newInstance = mesh.clone();
+                newInstance.position = new BABYLON.Vector3(x, 0, 0);
+
+                let children = newInstance.getChildMeshes();
+                let sourceChildren = mesh.getChildMeshes();
+
+                let bones = [];
+                let sourceBones = [];
+
+                for (var index = 0; index < children.length; index++) {
+                    var child = children[index];
+                    var sourceChild = sourceChildren[index];
+
+                    if (sourceChild.skeleton) {
+                        sourceBones.push(...sourceChild.skeleton.bones);
+                        child.skeleton = sourceChild.skeleton.clone();
+                        bones.push(...child.skeleton.bones);
+                    }
+                }
+
+                let sourceGroups = animationGroup;
+                for (var index = 0; index < sourceGroups.length; index++) {
+                    let group = scene.animationGroups[index];
+                    let newGroup = group.clone("", (target) => {
+                        let index = sourceBones.indexOf(target);
+
+                        if (index > -1) {
+                            return bones[index];
+                        }
+
+                        index = sourceChildren.indexOf(target);
+
+                        if (index > -1) {
+                            return children[index];
+                        }
+
+                        return target;
+                    })
+
+                    newGroup.play(true);
+                }
+            }
 
             // 添加轴向辅助线
             const showAxis = function (size) {
