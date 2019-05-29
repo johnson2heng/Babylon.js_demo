@@ -101,23 +101,6 @@
 
                 const skeleton = zombie.loadedSkeletons[0];
 
-<<<<<<< HEAD
-                console.log(animationGroup.targetedAnimations);
-
-                const cloneMesh = zombie.loadedMeshes[1].clone('femaleZombie2');
-
-                //cloneMesh.skeleton = skeleton.clone("skeleton2");
-
-                cloneMesh.position.x = -1;
-
-                console.log(zombie.loadedMeshes[0], cloneMesh);
-
-                //addNewDragon(zombie.loadedMeshes[0], animationGroup, 3);
-=======
-                //获取到复制的动画组
-                const newGroup = cloneMesh(zombie, new BABYLON.Vector3(2, 0, 0));
->>>>>>> 560e2126fb3f999ce14d0c305bfd3ea2956d4c5d
-
                 //停止动画
                 animationGroup.stop();
 
@@ -167,106 +150,6 @@
                     ul.appendChild(li);
                 }
             });
-
-<<<<<<< HEAD
-            addNewDragon = function(mesh, animationGroup, x) {
-                var newInstance = mesh.clone();
-                newInstance.position = new BABYLON.Vector3(x, 0, 0);
-
-                let children = newInstance.getChildMeshes();
-                let sourceChildren = mesh.getChildMeshes();
-
-                let bones = [];
-                let sourceBones = [];
-
-                for (var index = 0; index < children.length; index++) {
-                    var child = children[index];
-                    var sourceChild = sourceChildren[index];
-
-                    if (sourceChild.skeleton) {
-                        sourceBones.push(...sourceChild.skeleton.bones);
-                        child.skeleton = sourceChild.skeleton.clone();
-                        bones.push(...child.skeleton.bones);
-                    }
-                }
-
-                let sourceGroups = animationGroup;
-                for (var index = 0; index < sourceGroups.length; index++) {
-                    let group = scene.animationGroups[index];
-                    let newGroup = group.clone("", (target) => {
-                        let index = sourceBones.indexOf(target);
-
-                        if (index > -1) {
-                            return bones[index];
-                        }
-
-                        index = sourceChildren.indexOf(target);
-
-                        if (index > -1) {
-                            return children[index];
-                        }
-
-                        return target;
-                    })
-
-                    newGroup.play(true);
-                }
-=======
-            function cloneMesh(meshTask, position) {
-                console.log(meshTask);
-
-                const animationGroup = meshTask.loadedAnimationGroups[0];
-                const mesh = meshTask.loadedMeshes[0].clone();
-                const skeleton = meshTask.loadedSkeletons[0].clone();
-                const animations = animationGroup.targetedAnimations;
-
-                mesh.position = position;
-                //mesh.rotationQuaternion = null;
-                //mesh.rotation.x = -Math.PI/2;
-
-                console.log(animationGroup);
-
-                const childMeshes = mesh.getChildMeshes(); //获取到所有的mesh
-                //childMeshes[0].skeleton = skeleton;
-                const childTransformNodes = mesh.getChildTransformNodes(); //获取到所有的TransformNodes
-
-                console.log(childMeshes);
-                console.log(childTransformNodes);
-
-                childTransformNodes[23].position.y = 10;
-
-                const arr = [];
-                childTransformNodes.forEach(function (item) {
-                    console.log();
-                    const name = item.name.split('.');
-                    arr.push(name[name.length - 1]);
-                });
-                //console.log(arr);
-
-                //创建一个新的绑定新模型的animationGroup
-                const newAnimationGroup = new BABYLON.AnimationGroup();
-                animations.forEach(function (item) {
-                    //console.log(item.target.name);
-                    for(let i of skeleton.bones){
-                        const name = i.name.split('.');
-                        if(item.target.name === i.name){
-                            const animation = item.animation.clone();
-                            //const a = new BABYLON.Animation(item.animation.name,)
-                            i.animations.push(animation);
-                            newAnimationGroup.addTargetedAnimation(animation, i);
-                            console.log(true);
-                            return;
-                        }
-                    }
-                });
-
-                console.log(newAnimationGroup);
-
-                newAnimationGroup.play();
-
-                return newAnimationGroup;
->>>>>>> 560e2126fb3f999ce14d0c305bfd3ea2956d4c5d
-            }
 
             // 添加轴向辅助线
             const showAxis = function (size) {

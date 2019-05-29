@@ -80,6 +80,13 @@
             player2.invertU = 0; //是否在U轴反转UV坐标
             player2.isPickable = true;
 
+            //创建一个爆炸的效果
+            var boomManager = new BABYLON.SpriteManager('boomManager', '../images/twlt100.png', 1, {width:182, height:156}, scene);
+
+            var boom = new BABYLON.Sprite('boom', boomManager);
+            boom.playAnimation(0, 21, true, 100);
+            boom.position.x = 2;
+
 
             // Picking
             spriteManagerTrees.isPickable = true;
