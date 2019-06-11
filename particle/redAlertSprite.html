@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>红警精灵图片</title>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+</body>
+<script src="../js/babylon.custom.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', function () {
+        // 获取到canvas的dom对象
+        var canvas = document.getElementById('renderCanvas');
+
+        // 实例化3d引擎
+        var engine = new BABYLON.Engine(canvas, true);
+
+        // 创建场景并返回场景对象
+        var createScene = function () {
+            var scene = new BABYLON.Scene(engine);
+
+            let index = 0;
+
+            // 创建相机和光源
+            var light = new BABYLON.PointLight("Point", new BABYLON.Vector3(5, 10, 5), scene);
+            var camera = new BABYLON.ArcRotateCamera("Camera", Math.PI/2, Math.PI/2, 20, new BABYLON.Vector3(0, 0, 0), scene);
+            camera.attachControl(canvas, true);
+
+            //创建一个爆炸的效果
+            /*var boomManager = new BABYLON.SpriteManager('boomManager', '../images/twlt100.png', 1, {width:182, height:156}, scene);
+
+            var boom = new BABYLON.Sprite('boom', boomManager);
+            boom.playAnimation(0, 21, true, 100);
+            boom.position.x = 2;*/
+
+            scene.onPointerDown = function (evt) {
+                var pickResult = scene.pickSprite(this.pointerX, this.pointerY);
+                if (pickResult.hit) {
+                    pickResult.pickedSprite.angle += 0.5;
+                }
+            };
+
+            //创建精灵
+            //createSprite('../redAlertImages/twlt100.png', 182, 156, 0, 21, 100,  new BABYLON.Vector3(0, 2, 0));
+            createSprite('../redAlertImages/apmuzzle.png', 36, 36, 0, 12, 200,  new BABYLON.Vector3(6, 6, 0));
+            createSprite('../redAlertImages/apocexp.png', 84, 114, 0, 15, 100, new BABYLON.Vector3(5, 6, 0));
+            createSprite('../redAlertImages/armor.png', 33, 37, 0, 22, 100, new BABYLON.Vector3(4, 6, 0));
+            createSprite('../redAlertImages/bbblelrg.png', 32, 33, 0, 14, 100, new BABYLON.Vector3(3, 6, 0));
+            createSprite('../redAlertImages/brrlexp1.png', 218, 192, 0, 27, 100, new BABYLON.Vector3(2, 6, 0));
+            createSprite('../redAlertImages/chronoar.png', 188, 212, 0, 24, 100, new BABYLON.Vector3(1, 6, 0));
+            createSprite('../redAlertImages/chronofd.png', 212, 228, 0, 19, 100, new BABYLON.Vector3(0, 6, 0));
+            createSprite('../redAlertImages/chronotg.png', 212, 228, 0, 19, 100, new BABYLON.Vector3(-1, 6, 0));
+            createSprite('../redAlertImages/crivexp.png', 132, 156, 0, 27, 100, new BABYLON.Vector3(-2, 6, 0));
+            createSprite('../redAlertImages/crivexp2.png', 226, 296, 0, 27, 100, new BABYLON.Vector3(-3, 6, 0));
+            createSprite('../redAlertImages/dbris1lg.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(-4, 6, 0));
+            createSprite('../redAlertImages/dbris1sm.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(-5, 6, 0));
+            createSprite('../redAlertImages/dbris2lg.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(-6, 6, 0));
+
+            createSprite('../redAlertImages/dbris2sm.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(6, 5, 0));
+            createSprite('../redAlertImages/dbris3lg.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(5, 5, 0));
+            createSprite('../redAlertImages/dbris3sm.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(4, 5, 0));
+            createSprite('../redAlertImages/dbris4lg.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(3, 5, 0));
+            createSprite('../redAlertImages/dbris4sm.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(2, 5, 0));
+            createSprite('../redAlertImages/dbris5lg.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(1, 5, 0));
+            createSprite('../redAlertImages/dbris5sm.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(0, 5, 0));
+            createSprite('../redAlertImages/dbris6lg.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(-1, 5, 0));
+            createSprite('../redAlertImages/dbris6sm.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(-2, 5, 0));
+            createSprite('../redAlertImages/dbris7lg.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(-3, 5, 0));
+            createSprite('../redAlertImages/dbris7sm.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(-4, 5, 0));
+            createSprite('../redAlertImages/dbris8lg.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(-5, 5, 0));
+            createSprite('../redAlertImages/dbris8sm.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(-6, 5, 0));
+
+            createSprite('../redAlertImages/dbris9lg.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(6, 4, 0));
+            createSprite('../redAlertImages/dbris9sm.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(5, 4, 0));
+            createSprite('../redAlertImages/dbrs10lg.png', 30, 30, 0, 14, 100, new BABYLON.Vector3(4, 4, 0));
+            createSprite('../redAlertImages/dbrs10sm.png', 30, 30, 0, 29, 100, new BABYLON.Vector3(3, 4, 0));
+            createSprite('../redAlertImages/dbri-wm1.png', 32, 28, 0, 14, 100, new BABYLON.Vector3(2, 4, 0));
+            createSprite('../redAlertImages/dbri-wm2.png', 32, 28, 0, 14, 100, new BABYLON.Vector3(1, 4, 0));
+            createSprite('../redAlertImages/dbri-wm3.png', 32, 28, 0, 14, 100, new BABYLON.Vector3(0, 4, 0));
+            createSprite('../redAlertImages/death_a.png', 44, 26, 0, 3, 100, new BABYLON.Vector3(-1, 4, 0));
+            createSprite('../redAlertImages/death_b.png', 44, 26, 0, 3, 100, new BABYLON.Vector3(-2, 4, 0));
+            createSprite('../redAlertImages/death_c.png', 44, 26, 0, 3, 100, new BABYLON.Vector3(-3, 4, 0));
+            createSprite('../redAlertImages/death_d.png', 44, 26, 0, 3, 100, new BABYLON.Vector3(-4, 4, 0));
+            createSprite('../redAlertImages/death_e.png', 44, 26, 0, 3, 100, new BABYLON.Vector3(-5, 4, 0));
+            createSprite('../redAlertImages/death_f.png', 44, 26, 0, 3, 100, new BABYLON.Vector3(-6, 4, 0));
+
+            createSprite('../redAlertImages/demtexp.png', 194, 128, 0, 24, 100, new BABYLON.Vector3(6, 3, 0));
+            createSprite('../redAlertImages/deso.png', 126, 88, 0, 327, 100, new BABYLON.Vector3(5, 3, 0));
+            createSprite('../redAlertImages/dredmiss.png', 78, 78, 0, 31, 100, new BABYLON.Vector3(4, 3, 0));
+            createSprite('../redAlertImages/dron.png', 77, 77, 0, 181, 100, new BABYLON.Vector3(3, 3, 0));
+            createSprite('../redAlertImages/durasmoke.png', 22, 20, 0, 19, 100, new BABYLON.Vector3(2, 3, 0));
+            createSprite('../redAlertImages/electro.png', 60, 56, 0, 14, 100, new BABYLON.Vector3(1, 3, 0));
+            createSprite('../redAlertImages/explolb.png', 152, 144, 0, 35, 100, new BABYLON.Vector3(0, 3, 0));
+            createSprite('../redAlertImages/explolrg.png', 182, 158, 0, 24, 100, new BABYLON.Vector3(-1, 3, 0));
+            createSprite('../redAlertImages/explomed.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(-2, 3, 0));
+            createSprite('../redAlertImages/explosml.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(-3, 3, 0));
+            createSprite('../redAlertImages/fire01.png', 42, 80, 0, 47, 100, new BABYLON.Vector3(-4, 3, 0));
+            createSprite('../redAlertImages/fire02.png', 42, 70, 0, 71, 100, new BABYLON.Vector3(-5, 3, 0));
+            createSprite('../redAlertImages/fire03.png', 30, 60, 0, 23, 100, new BABYLON.Vector3(-6, 3, 0));
+
+            createSprite('../redAlertImages/flak.png', 30, 21, 0, 13, 100, new BABYLON.Vector3(6, 2, 0));
+            createSprite('../redAlertImages/flameguy.png', 52, 102, 0, 113, 100, new BABYLON.Vector3(5, 2, 0));
+            createSprite('../redAlertImages/gcmuzzle.png', 72, 62, 0, 27, 100, new BABYLON.Vector3(4, 2, 0));
+            createSprite('../redAlertImages/gtpowexp.png', 156, 126, 0, 29, 100, new BABYLON.Vector3(3, 2, 0));
+            createSprite('../redAlertImages/gunfire.png', 28, 26, 0, 3, 200, new BABYLON.Vector3(2, 2, 0));
+            createSprite('../redAlertImages/h2o_exp1.png', 112, 150, 0, 17, 100, new BABYLON.Vector3(1, 2, 0));
+            createSprite('../redAlertImages/h2o_exp2.png', 112, 150, 0, 17, 100, new BABYLON.Vector3(0, 2, 0));
+            createSprite('../redAlertImages/h2o_exp3.png', 112, 150, 0, 17, 100, new BABYLON.Vector3(-1, 2, 0));
+            createSprite('../redAlertImages/healall.png', 26, 26, 0, 22, 100, new BABYLON.Vector3(-2, 2, 0));
+            createSprite('../redAlertImages/htrkpuff.png', 56, 62, 0, 14, 100, new BABYLON.Vector3(-3, 2, 0));
+            createSprite('../redAlertImages/ironblst.png', 140, 138, 0, 21, 100, new BABYLON.Vector3(-4, 2, 0));
+            createSprite('../redAlertImages/ironfx.png', 48, 46, 0, 9, 100, new BABYLON.Vector3(-5, 2, 0));
+            createSprite('../redAlertImages/ktstlexp.png', 108, 166, 0, 19, 100, new BABYLON.Vector3(-6, 2, 0));
+
+            createSprite('../redAlertImages/lgrysmk1.png', 48, 42, 0, 19, 100, new BABYLON.Vector3(6, 1, 0));
+            createSprite('../redAlertImages/mininuke.png', 126, 148, 0, 38, 100, new BABYLON.Vector3(5, 1, 0));
+            createSprite('../redAlertImages/money.png', 37, 31, 0, 22, 100, new BABYLON.Vector3(4, 1, 0));
+            createSprite('../redAlertImages/nukeanim.png', 310, 370, 0, 38, 100, new BABYLON.Vector3(3, 1, 0));
+            createSprite('../redAlertImages/nukeball.png', 90, 94, 0, 20, 100, new BABYLON.Vector3(2, 1, 0));
+            createSprite('../redAlertImages/nukedie.png', 60, 60, 0, 59, 100, new BABYLON.Vector3(1, 1, 0));
+            createSprite('../redAlertImages/nukepuff.png', 56, 54, 0, 25, 100, new BABYLON.Vector3(0, 1, 0));
+            createSprite('../redAlertImages/nukestm.png', 74, 112, 0, 14, 100, new BABYLON.Vector3(-1, 1, 0));
+            createSprite('../redAlertImages/nuketo.png', 154, 112, 0, 23, 100, new BABYLON.Vector3(-2, 1, 0));
+            createSprite('../redAlertImages/parach.png', 102, 186, 0, 70, 100, new BABYLON.Vector3(-3, 1, 0));
+            createSprite('../redAlertImages/piff.png', 28, 28, 0, 6, 100, new BABYLON.Vector3(-4, 1, 0));
+            createSprite('../redAlertImages/piffpiff.png', 28, 28, 0, 11, 100, new BABYLON.Vector3(-5, 1, 0));
+            createSprite('../redAlertImages/reveal.png', 27, 27, 0, 22, 100, new BABYLON.Vector3(-6, 1, 0));
+
+            createSprite('../redAlertImages/ring1.png', 264, 140, 0, 20, 100, new BABYLON.Vector3(6, 0, 0));
+            createSprite('../redAlertImages/s_bang16.png', 148, 158, 0, 11, 100, new BABYLON.Vector3(5, 0, 0));
+            createSprite('../redAlertImages/s_bang24.png', 148, 158, 0, 11, 100, new BABYLON.Vector3(4, 0, 0));
+            createSprite('../redAlertImages/s_bang34.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(3, 0, 0));
+            createSprite('../redAlertImages/s_bang48.png', 148, 200, 0, 23, 100, new BABYLON.Vector3(2, 0, 0));
+            createSprite('../redAlertImages/s_brnl20.png', 148, 158, 0, 11, 100, new BABYLON.Vector3(1, 0, 0));
+            createSprite('../redAlertImages/s_brnl30.png', 148, 158, 0, 11, 100, new BABYLON.Vector3(0, 0, 0));
+            createSprite('../redAlertImages/s_brnl40.png', 148, 158, 0, 11, 100, new BABYLON.Vector3(-1, 0, 0));
+            createSprite('../redAlertImages/s_brnl58.png', 148, 158, 0, 11, 100, new BABYLON.Vector3(-2, 0, 0));
+            createSprite('../redAlertImages/s_clsn16.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(-3, 0, 0));
+            createSprite('../redAlertImages/s_clsn22.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(-4, 0, 0));
+            createSprite('../redAlertImages/s_clsn30.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(-5, 0, 0));
+            createSprite('../redAlertImages/s_clsn58.png', 182, 156, 0, 24, 100, new BABYLON.Vector3(-6, 0, 0));
+
+            createSprite('../redAlertImages/s_tumu22.png', 148, 158, 0, 11, 100, new BABYLON.Vector3(6, -1, 0));
+            createSprite('../redAlertImages/s_tumu30.png', 148, 158, 0, 11, 100, new BABYLON.Vector3(5, -1, 0));
+            createSprite('../redAlertImages/s_tumu42.png', 148, 158, 0, 11, 100, new BABYLON.Vector3(4, -1, 0));
+            createSprite('../redAlertImages/s_tumu60.png', 182, 156, 0, 24, 100, new BABYLON.Vector3(3, -1, 0));
+            createSprite('../redAlertImages/sgrysmk1.png', 48, 42, 0, 19, 100, new BABYLON.Vector3(2, -1, 0));
+            createSprite('../redAlertImages/smkpuff.png', 78, 80, 0, 25, 100, new BABYLON.Vector3(1, -1, 0));
+            createSprite('../redAlertImages/smokey2.png', 22, 22, 0, 19, 100, new BABYLON.Vector3(0, -1, 0));
+            createSprite('../redAlertImages/sqdwake.png', 78, 58, 0, 25, 100, new BABYLON.Vector3(-1, -1, 0));
+            createSprite('../redAlertImages/tstimpct.png', 38, 44, 0, 13, 100, new BABYLON.Vector3(-2, -1, 0));
+            createSprite('../redAlertImages/tstlexp.png', 122, 140, 0, 39, 100, new BABYLON.Vector3(-3, -1, 0));
+            createSprite('../redAlertImages/twlt026.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(-4, -1, 0));
+            createSprite('../redAlertImages/twlt036.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(-5, -1, 0));
+            createSprite('../redAlertImages/twlt050.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(-6, -1, 0));
+
+            createSprite('../redAlertImages/twlt070.png', 186, 196, 0, 29, 100, new BABYLON.Vector3(6, -2, 0));
+            createSprite('../redAlertImages/twlt100.png', 182, 156, 0, 24, 100, new BABYLON.Vector3(5, -2, 0));
+            createSprite('../redAlertImages/ucflash.png', 32, 30, 0, 6, 100, new BABYLON.Vector3(4, -2, 0));
+            createSprite('../redAlertImages/v3takoff.png', 68, 76, 0, 29, 100, new BABYLON.Vector3(3, -2, 0));
+            createSprite('../redAlertImages/veteran.png', 31, 30, 0, 22, 100, new BABYLON.Vector3(2, -2, 0));
+            createSprite('../redAlertImages/vtexplod.png', 80, 110, 0, 35, 100, new BABYLON.Vector3(1, -2, 0));
+            createSprite('../redAlertImages/vtmuzzle.png', 38, 58, 0, 10, 100, new BABYLON.Vector3(0, -2, 0));
+            createSprite('../redAlertImages/wake1.png', 56, 34, 0, 14, 100, new BABYLON.Vector3(-1, -2, 0));
+            createSprite('../redAlertImages/warpaway.png', 124, 90, 0, 23, 100, new BABYLON.Vector3(-2, -2, 0));
+            createSprite('../redAlertImages/warpout.png', 68, 52, 0, 29, 100, new BABYLON.Vector3(-3, -2, 0));
+            createSprite('../redAlertImages/wccloud1.png', 190, 132, 0, 59, 100, new BABYLON.Vector3(-4, -2, 0));
+            createSprite('../redAlertImages/wccloud2.png', 204, 172, 0, 59, 100, new BABYLON.Vector3(-5, -2, 0));
+            createSprite('../redAlertImages/wccloud3.png', 204, 172, 0, 59, 100, new BABYLON.Vector3(-6, -2, 0));
+
+            createSprite('../redAlertImages/wclbolt1.png', 108, 185, 0, 5, 100, new BABYLON.Vector3(6, -3, 0));
+            createSprite('../redAlertImages/wclbolt2.png', 108, 185, 0, 5, 100, new BABYLON.Vector3(5, -3, 0));
+            createSprite('../redAlertImages/wclbolt3.png', 108, 185, 0, 5, 100, new BABYLON.Vector3(4, -3, 0));
+            createSprite('../redAlertImages/xgrymed1.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(3, -3, 0));
+            createSprite('../redAlertImages/xgrymed2.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(2, -3, 0));
+            createSprite('../redAlertImages/xgrysml1.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(1, -3, 0));
+            createSprite('../redAlertImages/xgrysml2.png', 148, 158, 0, 17, 100, new BABYLON.Vector3(0, -3, 0));
+            createSprite('../redAlertImages/yuricntl.png', 38, 28, 0, 20, 100, new BABYLON.Vector3(-1, -3, 0));
+
+            function createSprite(url, width, height, start, end, step, position) {
+                index ++;
+                //创建一个爆炸的效果
+                var boomManager = new BABYLON.SpriteManager('spriteManager' + index, url, 1, {width:width, height:height}, scene);
+                boomManager.billboardMode = BABYLON.AbstractMesh.BILLBOARDMODE_Y;
+
+                var boom = new BABYLON.Sprite('sprite' + index, boomManager);
+                boom.playAnimation(start, end, true, step);
+                boom.position = position;
+                boom.height = height/width;
+            }
+
+            // 添加轴向辅助线
+            const showAxis = function (size) {
+                var makeTextPlane = function (text, color, size) {
+                    var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
+                    dynamicTexture.hasAlpha = true;
+                    dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color, "transparent", true);
+                    var plane = new BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
+                    plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
+                    plane.material.backFaceCulling = false;
+                    plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
+                    plane.material.diffuseTexture = dynamicTexture;
+                    return plane;
+                };
+
+                var axisX = BABYLON.Mesh.CreateLines("axisX", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0),
+                    new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
+                ], scene);
+                axisX.color = new BABYLON.Color3(1, 0, 0);
+                var xChar = makeTextPlane("X", "red", size / 10);
+                xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
+                var axisY = BABYLON.Mesh.CreateLines("axisY", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(-0.05 * size, size * 0.95, 0),
+                    new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3(0.05 * size, size * 0.95, 0)
+                ], scene);
+                axisY.color = new BABYLON.Color3(0, 1, 0);
+                var yChar = makeTextPlane("Y", "green", size / 10);
+                yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
+                var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
+                    new BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, -0.05 * size, size * 0.95),
+                    new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3(0, 0.05 * size, size * 0.95)
+                ], scene);
+                axisZ.color = new BABYLON.Color3(0, 0, 1);
+                var zChar = makeTextPlane("Z", "blue", size / 10);
+                zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
+            };
+
+            //showAxis(10);
+
+            // 返回场景
+            return scene;
+        };
+
+        // 获取到创建的场景
+        var scene = createScene();
+
+        // 循环渲染，性能最大没秒六十帧
+        engine.runRenderLoop(function () {
+            scene.render();
+        });
+
+        // 浏览器大小变动时，触发引擎的重载状态
+        window.addEventListener('resize', function () {
+            engine.resize();
+        });
+    });
+</script>
+</html>
